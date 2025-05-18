@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食材识别 - 识别结果</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Source Han Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background-color: #1e1e1e;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        
+        .container {
+            position: relative;
+            width: 750px;
+            height: 1624px;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid #333;
+            border-radius: 60px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* iOS顶部状态栏 */
+        .ios-status-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 44px;
+            background-color: #1e1e1e;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px;
+        }
+        
+        .status-bar-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .time {
+            color: #FFFFFF;
+            font-size: 32px;
+            font-weight: 600;
+        }
+        
+        .status-bar-right {
+            display: flex;
+            align-items: center;
+        }
+        
+        .signal-icon, .wifi-icon, .battery-icon {
+            height: 24px;
+            margin-left: 10px;
+        }
+        
+        .signal-strength {
+            color: #FFFFFF;
+            font-size: 24px;
+            margin-right: 8px;
+        }
+        
+        .camera-view {
+            position: absolute;
+            top: 110px; /* 距离顶部110px */
+            left: 0;
+            width: 100%;
+            height: calc(100% - 110px);
+            background-color: #1e1e1e;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* 改为顶部对齐 */
+            padding-top: 0;
+        }
+        
+        .preview-image {
+            width: 690px;
+            height: auto;
+            object-fit: contain;
+            opacity: 0.9;
+            border-radius: 24px;
+        }
+        
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(216, 216, 216, 0) 57%, rgba(24, 24, 24, 0.47) 77%);
+            z-index: 1;
+        }
+        
+        .ingredient-tags {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+        }
+        
+        .ingredient-tag {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+        
+        .tag-marker {
+            position: relative;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: transparent;
+        }
+        
+        .tag-marker-inner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #FFFFFF;
+        }
+        
+        .tag-content {
+            position: relative;
+            margin-top: -40px;
+            padding: 20px;
+        }
+        
+        .tag-box {
+            padding: 15px;
+            border-radius: 12px;
+            background-color: rgba(255, 255, 255, 0.6);
+            border: 1px solid #FFFFFF;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+            height: 65px;
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.3s ease-out;
+        }
+        
+        .tag-box.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .tag-name {
+            font-size: 28px;
+            font-weight: 500;
+            color: #3D3D3D;
+            line-height: 35px;
+            text-align: center;
+            width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .tag-weight {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 3px 10px;
+            border-radius: 30px;
+            background-color: rgba(39, 39, 39, 0.8);
+            font-size: 18px;
+            color: #FFFFFF;
+            line-height: 44px;
+            white-space: nowrap;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+        }
+        
+        .tag-weight.show {
+            opacity: 1;
+        }
+        
+        .tag-dot-container {
+            position: absolute;
+            left: -44px; /* 32px + 12px */
+            top: 50%;
+            transform: translateY(-50%) scale(0.5);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: transparent;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: all 0.2s ease-out;
+        }
+        
+        .tag-dot-container.show {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+        
+        .tag-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #FFFFFF;
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .bottom-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 667px;
+            border-radius: 24px 24px 0 0;
+            background: linear-gradient(180deg, #FFFFFF 0%, #F6F6F6 26%);
+            z-index: 3;
+            padding-top: 36px;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: transform 0.4s ease-out, opacity 0.3s ease-out;
+        }
+        
+        .bottom-container.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .title {
+            font-size: 36px;
+            font-weight: 500;
+            color: #3D3D3D;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .ingredients-card {
+            margin: 0 16px;
+            padding: 0;
+            height: 430px;
+            overflow-y: auto;
+        }
+        
+        .ingredient-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            position: relative;
+            padding: 16px;
+            border-radius: 24px;
+            background-color: #FFFFFF;
+        }
+        
+        .ingredient-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            margin-right: 16px;
+            object-fit: cover;
+        }
+        
+        .ingredient-name {
+            font-size: 32px;
+            font-weight: 500;
+            color: #3D3D3D;
+            width: 120px;
+        }
+        
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            margin-left: auto;
+            margin-right: 16px;
+        }
+        
+        .quantity-btn {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        
+        .quantity-input {
+            width: 261px;
+            height: 72px;
+            background-color: #F6F6F6;
+            border: 1px solid #E5E5E5;
+            border-radius: 12px;
+            margin: 0 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            font-weight: 600;
+            color: #3D3D3D;
+        }
+        
+        .delete-btn {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .actions-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 160px;
+            background-color: #FFFFFF;
+            padding: 0 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .action-btn {
+            width: 335px;
+            height: 80px;
+            border-radius: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .secondary-btn {
+            background-color: #F5F5F5;
+            color: #191919;
+        }
+        
+        .primary-btn {
+            background: linear-gradient(90deg, #343B45 0%, #272727 100%);
+            color: #FFFFFF;
+        }
+        
+        .home-indicator {
+            position: absolute;
+            bottom: 26px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 268px;
+            height: 10px;
+        }
+        
+        .indicator {
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- iOS顶部状态栏 -->
+        <div class="ios-status-bar">
+            <div class="status-bar-left">
+                <div class="time">9:41</div>
+            </div>
+            <div class="status-bar-right">
+                <div class="signal-strength">5G</div>
+                <div class="signal">
+                    <svg width="34" height="24" viewBox="0 0 34 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1.66699 9.66667H3.33366V14.3333H1.66699V9.66667ZM6.66699 7.33333H8.33366V16.6667H6.66699V7.33333ZM11.667 5H13.3337V19H11.667V5ZM16.667 2.66667H18.3337V21.3333H16.667V2.66667Z" fill="white"/>
+                    </svg>
+                </div>
+                <div class="wifi">
+                    <svg width="30" height="24" viewBox="0 0 30 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M15.0003 7.33333C17.8337 7.33333 20.4337 8.53333 22.267 10.3667L23.4337 9.2C21.267 7.03333 18.267 5.66667 15.0003 5.66667C11.7337 5.66667 8.73366 7.03333 6.56699 9.2L7.73366 10.3667C9.56699 8.53333 12.167 7.33333 15.0003 7.33333ZM9.00033 13.1333L10.167 14.3C11.5003 12.9667 13.167 12.1667 15.0003 12.1667C16.8337 12.1667 18.5003 12.9667 19.8337 14.3L21.0003 13.1333C19.3337 11.4667 17.267 10.5 15.0003 10.5C12.7337 10.5 10.667 11.4667 9.00033 13.1333ZM15.0003 17C16.1003 17 17.0003 16.1 17.0003 15C17.0003 13.9 16.1003 13 15.0003 13C13.9003 13 13.0003 13.9 13.0003 15C13.0003 16.1 13.9003 17 15.0003 17Z" fill="white"/>
+                    </svg>
+                </div>
+                <div class="battery">
+                    <svg width="40" height="24" viewBox="0 0 40 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M8 8.5C7.44772 8.5 7 8.94772 7 9.5V14.5C7 15.0523 7.44772 15.5 8 15.5H24C24.5523 15.5 25 15.0523 25 14.5V9.5C25 8.94772 24.5523 8.5 24 8.5H8ZM9 13.5V10.5H22V13.5H9Z" fill="white"/>
+                        <path d="M26 10V14H27C27.5523 14 28 13.5523 28 13V11C28 10.4477 27.5523 10 27 10H26Z" fill="white"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 相机视图/背景图 -->
+        <div class="camera-view">
+            <img src="assets/fridge_new.jpg" class="preview-image">
+            <div class="overlay"></div>
+            
+            <!-- 识别结果标签 -->
+            <div class="ingredient-tags">
+                <!-- 芦笋标签 -->
+                <div class="ingredient-tag" style="top: 100px; left: 180px;">
+                    <div class="tag-marker">
+                        <div class="tag-marker-inner"></div>
+                    </div>
+                    <div class="tag-content">
+                        <div class="tag-weight">约200g</div>
+                        <div class="tag-box">
+                            <div class="tag-dot-container">
+                                <div class="tag-dot"></div>
+                            </div>
+                            <div class="tag-name">芦笋</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 小番茄标签 -->
+                <div class="ingredient-tag" style="top: 150px; left: 350px;">
+                    <div class="tag-marker">
+                        <div class="tag-marker-inner"></div>
+                    </div>
+                    <div class="tag-content">
+                        <div class="tag-weight">约200g</div>
+                        <div class="tag-box">
+                            <div class="tag-dot-container">
+                                <div class="tag-dot"></div>
+                            </div>
+                            <div class="tag-name">小番茄</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 鸡蛋标签 -->
+                <div class="ingredient-tag" style="top: 220px; left: 270px;">
+                    <div class="tag-marker">
+                        <div class="tag-marker-inner"></div>
+                    </div>
+                    <div class="tag-content">
+                        <div class="tag-weight">约200g</div>
+                        <div class="tag-box">
+                            <div class="tag-dot-container">
+                                <div class="tag-dot"></div>
+                            </div>
+                            <div class="tag-name">鸡蛋</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 金针菇标签 -->
+                <div class="ingredient-tag" style="top: 590px; left: 210px;">
+                    <div class="tag-marker">
+                        <div class="tag-marker-inner"></div>
+                    </div>
+                    <div class="tag-content">
+                        <div class="tag-weight">约200g</div>
+                        <div class="tag-box">
+                            <div class="tag-dot-container">
+                                <div class="tag-dot"></div>
+                            </div>
+                            <div class="tag-name">金针菇</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 洋葱标签 -->
+                <div class="ingredient-tag" style="top: 760px; left: 340px;">
+                    <div class="tag-marker">
+                        <div class="tag-marker-inner"></div>
+                    </div>
+                    <div class="tag-content">
+                        <div class="tag-weight">约200g</div>
+                        <div class="tag-box">
+                            <div class="tag-dot-container">
+                                <div class="tag-dot"></div>
+                            </div>
+                            <div class="tag-name">洋葱</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 彩椒标签 -->
+                <div class="ingredient-tag" style="top: 740px; left: 160px;">
+                    <div class="tag-marker">
+                        <div class="tag-marker-inner"></div>
+                    </div>
+                    <div class="tag-content">
+                        <div class="tag-weight">约200g</div>
+                        <div class="tag-box">
+                            <div class="tag-dot-container">
+                                <div class="tag-dot"></div>
+                            </div>
+                            <div class="tag-name">彩椒</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 底部确认区域 -->
+        <div class="bottom-container">
+            <div class="title">识别到6种食材🥦</div>
+            
+            <div class="ingredients-card">
+                <!-- 芦笋 -->
+                <div class="ingredient-item">
+                    <img src="./assets/asparagus.png" class="ingredient-image">
+                    <div class="ingredient-name">芦笋</div>
+                    <div class="quantity-control">
+                        <div class="quantity-btn minus-btn" data-ingredient="芦笋">
+                            <img src="./assets/minus.svg" alt="减少">
+                        </div>
+                        <div class="quantity-input" id="quantity-芦笋">200g</div>
+                        <div class="quantity-btn plus-btn" data-ingredient="芦笋">
+                            <img src="./assets/plus.svg" alt="增加">
+                        </div>
+                    </div>
+                    <div class="delete-btn" data-ingredient="芦笋">
+                        <img src="./assets/delete.svg" alt="删除">
+                    </div>
+                </div>
+                
+                <!-- 彩椒 -->
+                <div class="ingredient-item">
+                    <img src="./assets/pepper.png" class="ingredient-image">
+                    <div class="ingredient-name">彩椒</div>
+                    <div class="quantity-control">
+                        <div class="quantity-btn minus-btn" data-ingredient="彩椒">
+                            <img src="./assets/minus.svg" alt="减少">
+                        </div>
+                        <div class="quantity-input" id="quantity-彩椒">1个</div>
+                        <div class="quantity-btn plus-btn" data-ingredient="彩椒">
+                            <img src="./assets/plus.svg" alt="增加">
+                        </div>
+                    </div>
+                    <div class="delete-btn" data-ingredient="彩椒">
+                        <img src="./assets/delete.svg" alt="删除">
+                    </div>
+                </div>
+                
+                <!-- 鸡蛋 -->
+                <div class="ingredient-item">
+                    <img src="./assets/egg.png" class="ingredient-image">
+                    <div class="ingredient-name">鸡蛋</div>
+                    <div class="quantity-control">
+                        <div class="quantity-btn minus-btn" data-ingredient="鸡蛋">
+                            <img src="./assets/minus.svg" alt="减少">
+                        </div>
+                        <div class="quantity-input" id="quantity-鸡蛋">1个</div>
+                        <div class="quantity-btn plus-btn" data-ingredient="鸡蛋">
+                            <img src="./assets/plus.svg" alt="增加">
+                        </div>
+                    </div>
+                    <div class="delete-btn" data-ingredient="鸡蛋">
+                        <img src="./assets/delete.svg" alt="删除">
+                    </div>
+                </div>
+                
+                <!-- 金针菇 -->
+                <div class="ingredient-item">
+                    <img src="./assets/mushroom.png" class="ingredient-image">
+                    <div class="ingredient-name">金针菇</div>
+                    <div class="quantity-control">
+                        <div class="quantity-btn minus-btn" data-ingredient="金针菇">
+                            <img src="./assets/minus.svg" alt="减少">
+                        </div>
+                        <div class="quantity-input" id="quantity-金针菇">200g</div>
+                        <div class="quantity-btn plus-btn" data-ingredient="金针菇">
+                            <img src="./assets/plus.svg" alt="增加">
+                        </div>
+                    </div>
+                    <div class="delete-btn" data-ingredient="金针菇">
+                        <img src="./assets/delete.svg" alt="删除">
+                    </div>
+                </div>
+                
+                <!-- 洋葱 -->
+                <div class="ingredient-item">
+                    <img src="./assets/onion.png" class="ingredient-image">
+                    <div class="ingredient-name">洋葱</div>
+                    <div class="quantity-control">
+                        <div class="quantity-btn minus-btn" data-ingredient="洋葱">
+                            <img src="./assets/minus.svg" alt="减少">
+                        </div>
+                        <div class="quantity-input" id="quantity-洋葱">200g</div>
+                        <div class="quantity-btn plus-btn" data-ingredient="洋葱">
+                            <img src="./assets/plus.svg" alt="增加">
+                        </div>
+                    </div>
+                    <div class="delete-btn" data-ingredient="洋葱">
+                        <img src="./assets/delete.svg" alt="删除">
+                    </div>
+                </div>
+                
+                <!-- 小番茄 -->
+                <div class="ingredient-item">
+                    <img src="./assets/tomato.png" class="ingredient-image">
+                    <div class="ingredient-name">小番茄</div>
+                    <div class="quantity-control">
+                        <div class="quantity-btn minus-btn" data-ingredient="小番茄">
+                            <img src="./assets/minus.svg" alt="减少">
+                        </div>
+                        <div class="quantity-input" id="quantity-小番茄">200g</div>
+                        <div class="quantity-btn plus-btn" data-ingredient="小番茄">
+                            <img src="./assets/plus.svg" alt="增加">
+                        </div>
+                    </div>
+                    <div class="delete-btn" data-ingredient="小番茄">
+                        <img src="./assets/delete.svg" alt="删除">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 底部按钮 -->
+            <div class="actions-bar">
+                <div class="action-btn secondary-btn" id="recommendation-btn">查看推荐搭配</div>
+                <div class="action-btn primary-btn" id="recipe-btn">查看菜谱灵感</div>
+            </div>
+            
+            <!-- Home Indicator -->
+            <div class="home-indicator">
+                <div class="indicator"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加加载中遮罩层函数
+            function showLoadingOverlay(message) {
+                // 检查是否已经存在loading遮罩
+                let loadingOverlay = document.getElementById('loadingOverlay');
+                if (!loadingOverlay) {
+                    // 创建遮罩层
+                    loadingOverlay = document.createElement('div');
+                    loadingOverlay.id = 'loadingOverlay';
+                    loadingOverlay.style.position = 'fixed';
+                    loadingOverlay.style.top = '0';
+                    loadingOverlay.style.left = '0';
+                    loadingOverlay.style.width = '100%';
+                    loadingOverlay.style.height = '100%';
+                    loadingOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+                    loadingOverlay.style.display = 'flex';
+                    loadingOverlay.style.justifyContent = 'center';
+                    loadingOverlay.style.alignItems = 'center';
+                    loadingOverlay.style.flexDirection = 'column';
+                    loadingOverlay.style.zIndex = '9999';
+                    
+                    // 创建加载动画
+                    const spinner = document.createElement('div');
+                    spinner.style.width = '48px';
+                    spinner.style.height = '48px';
+                    spinner.style.border = '5px solid #FFFFFF';
+                    spinner.style.borderRadius = '50%';
+                    spinner.style.borderTop = '5px solid #272727';
+                    spinner.style.animation = 'spin 1s linear infinite';
+                    
+                    // 创建加载文字
+                    const messageElement = document.createElement('div');
+                    messageElement.id = 'loadingMessage';
+                    messageElement.style.color = '#FFFFFF';
+                    messageElement.style.marginTop = '16px';
+                    messageElement.style.fontSize = '30px';
+                    messageElement.style.fontWeight = '500';
+                    messageElement.textContent = message || '加载中...';
+                    
+                    // 添加CSS动画
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    
+                    // 组装遮罩层
+                    loadingOverlay.appendChild(spinner);
+                    loadingOverlay.appendChild(messageElement);
+                    document.body.appendChild(loadingOverlay);
+                } else {
+                    // 如果已存在，只更新消息
+                    const messageElement = document.getElementById('loadingMessage');
+                    if (messageElement) {
+                        messageElement.textContent = message || '加载中...';
+                    }
+                    loadingOverlay.style.display = 'flex';
+                }
+            }
+            
+            // 隐藏加载中遮罩层
+            function hideLoadingOverlay() {
+                const loadingOverlay = document.getElementById('loadingOverlay');
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+            }
+            
+            // 生成随机整数的函数
+            function getRandomInt(min, max) {
+                min = Math.ceil(min);
+                max = Math.floor(max);
+                return Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+            
+            // 根据食材类型生成随机值和单位
+            function generateRandomValue(ingredientName) {
+                // 按个计数的食材
+                const countByUnit = ['鸡蛋', '洋葱', '玉米', '彩椒'];
+                
+                if (ingredientName === '鸡蛋') {
+                    return {
+                        unit: '个',
+                        value: getRandomInt(1, 20),
+                        step: 1,
+                        min: 1
+                    };
+                } else if (countByUnit.includes(ingredientName)) {
+                    return {
+                        unit: '个',
+                        value: getRandomInt(1, 4),
+                        step: 1,
+                        min: 1
+                    };
+                } else {
+                    // 按克计数的食材，生成50的倍数
+                    const randomValue = getRandomInt(4, 12) * 50; // 200-600之间的50的倍数
+                    return {
+                        unit: 'g',
+                        value: randomValue,
+                        step: 50,
+                        min: 50
+                    };
+                }
+            }
+            
+            // 食材数据 - 初始化随机值
+            const ingredients = {
+                '芦笋': generateRandomValue('芦笋'),
+                '彩椒': generateRandomValue('彩椒'),
+                '鸡蛋': generateRandomValue('鸡蛋'),
+                '金针菇': generateRandomValue('金针菇'),
+                '洋葱': generateRandomValue('洋葱'),
+                '小番茄': generateRandomValue('小番茄')
+            };
+            
+            // 初始化显示数量
+            function initializeQuantityDisplay() {
+                Object.keys(ingredients).forEach(ingredientName => {
+                    const ingredient = ingredients[ingredientName];
+                    const quantityEl = document.getElementById(`quantity-${ingredientName}`);
+                    if (quantityEl) {
+                        quantityEl.textContent = `${ingredient.value}${ingredient.unit}`;
+                    }
+                    
+                    // 更新识别气泡上的重量/数量
+                    const tags = document.querySelectorAll('.ingredient-tag');
+                    tags.forEach(tag => {
+                        const tagName = tag.querySelector('.tag-name').textContent;
+                        if (tagName === ingredientName) {
+                            const tagWeight = tag.querySelector('.tag-weight');
+                            tagWeight.textContent = `约${ingredient.value}${ingredient.unit}`;
+                        }
+                    });
+                });
+            }
+            
+            // 显示底部弹层动画
+            setTimeout(() => {
+                const bottomContainer = document.querySelector('.bottom-container');
+                bottomContainer.classList.add('show');
+            }, 500);
+            
+            // 初始化显示
+            initializeQuantityDisplay();
+            
+            // 绑定加减按钮事件
+            const minusBtns = document.querySelectorAll('.minus-btn');
+            const plusBtns = document.querySelectorAll('.plus-btn');
+            const deleteBtns = document.querySelectorAll('.delete-btn');
+            
+            minusBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ingredientName = this.getAttribute('data-ingredient');
+                    const ingredient = ingredients[ingredientName];
+                    
+                    if (ingredient.value > ingredient.min) {
+                        ingredient.value -= ingredient.step;
+                        updateQuantityDisplay(ingredientName, ingredient);
+                    }
+                });
+            });
+            
+            plusBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ingredientName = this.getAttribute('data-ingredient');
+                    const ingredient = ingredients[ingredientName];
+                    
+                    ingredient.value += ingredient.step;
+                    updateQuantityDisplay(ingredientName, ingredient);
+                });
+            });
+            
+            deleteBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const ingredientName = this.getAttribute('data-ingredient');
+                    const itemElement = this.closest('.ingredient-item');
+                    
+                    // 淡出动画
+                    itemElement.style.transition = 'opacity 0.3s ease-out';
+                    itemElement.style.opacity = '0';
+                    
+                    // 动画完成后移除元素
+                    setTimeout(() => {
+                        itemElement.remove();
+                        
+                        // 更新标题中的物品数量
+                        updateItemCount();
+                        
+                        // 隐藏对应的标签
+                        const tags = document.querySelectorAll('.ingredient-tag');
+                        tags.forEach(tag => {
+                            const tagName = tag.querySelector('.tag-name').textContent;
+                            if (tagName === ingredientName) {
+                                const tagBox = tag.querySelector('.tag-box');
+                                const tagDot = tag.querySelector('.tag-dot-container');
+                                const tagWeight = tag.querySelector('.tag-weight');
+                                
+                                // 先隐藏矩形
+                                tagBox.style.opacity = '0';
+                                tagBox.style.transform = 'translateX(10px)';
+                                tagWeight.style.opacity = '0';
+                                
+                                // 然后隐藏白点
+                                setTimeout(() => {
+                                    tagDot.style.opacity = '0';
+                                    tagDot.style.transform = 'scale(0.5)';
+                                    
+                                    // 最后隐藏整个标签
+                                    setTimeout(() => {
+                                        tag.style.display = 'none';
+                                    }, 200);
+                                }, 200);
+                            }
+                        });
+                    }, 300);
+                    
+                    // 从数据中移除
+                    delete ingredients[ingredientName];
+                });
+            });
+            
+            // 更新显示数量 (只更新底部列表，不更新气泡)
+            function updateQuantityDisplay(ingredientName, ingredient) {
+                const quantityEl = document.getElementById(`quantity-${ingredientName}`);
+                if (quantityEl) {
+                    quantityEl.textContent = `${ingredient.value}${ingredient.unit}`;
+                }
+            }
+            
+            // 更新物品数量
+            function updateItemCount() {
+                const count = Object.keys(ingredients).length;
+                document.querySelector('.title').textContent = `识别到${count}种食材🥦`;
+            }
+            
+            // 监听菜谱按钮点击
+            document.getElementById('recipe-btn').addEventListener('click', function() {
+                showLoadingOverlay('正在分析菜谱...');
+                // 将识别到的食材信息保存到localStorage
+                localStorage.setItem('recognizedIngredients', JSON.stringify(ingredients));
+                
+                // 跳转到菜谱页面
+                setTimeout(function() {
+                    try {
+                        window.location.href = 'recipe-final.html';
+                    } catch (e) {
+                        console.error('跳转失败:', e);
+                        hideLoadingOverlay();
+                        alert('跳转失败，请重试');
+                    }
+                }, 1000);
+            });
+            
+            // 推荐搭配按钮点击事件
+            document.getElementById('recommendation-btn').addEventListener('click', function() {
+                alert('查看推荐搭配功能');
+            });
+            
+            // 添加气泡出现动画
+            const tags = document.querySelectorAll('.ingredient-tag');
+            tags.forEach((tag, index) => {
+                setTimeout(() => {
+                    // 先显示小白点
+                    const tagDot = tag.querySelector('.tag-dot-container');
+                    tagDot.classList.add('show');
+                    
+                    // 200ms后显示矩形和重量
+                    setTimeout(() => {
+                        const tagBox = tag.querySelector('.tag-box');
+                        const tagWeight = tag.querySelector('.tag-weight');
+                        tagBox.classList.add('show');
+                        tagWeight.classList.add('show');
+                    }, 200);
+                }, index * 80); // 每个标签间隔80ms出现，总时长不超过500ms
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,1577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>美食菜谱 - 设计版</title>
+    <style>
+        /* 基础样式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: "PingFang SC", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+            color: #333;
+            background-color: #f8f8f8;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 750px; /* 按照设计稿宽度 */
+            margin: 0 auto;
+            background: linear-gradient(179deg, #FFFFFF 0%, #F1F1F2 15%);
+            min-height: 100vh;
+            padding-top: 156px; /* 添加顶部内边距，使识别食材区域距离页面顶部为156px */
+        }
+        
+        /* 顶部导航栏 */
+        .navbar {
+            display: flex;
+            align-items: center;
+            height: 88px;
+            padding: 0 32px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: transparent;
+            z-index: 100;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        
+        .navbar .title {
+            display: none; /* 隐藏顶部标题 */
+        }
+        
+        .navbar .back {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 24px;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 22px;
+        }
+        
+        /* 食材识别区域 */
+        .recognition-area {
+            padding: 24px 32px;
+            background: transparent;
+            margin-top: 0; /* 移除margin-top */
+        }
+        
+        .ingredients-list {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+            padding-bottom: 8px;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .ingredients-list::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
+        }
+        
+        .ingredient-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 94px;
+            cursor: pointer;
+        }
+        
+        /* 固定尺寸的图片容器 */
+        .img-container {
+            width: 94px;
+            height: 94px;
+            border-radius: 12px;
+            background-color: #f0f0f0;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 8px;
+            border: 1px solid #FFFFFF;
+            transition: all 0.2s ease;
+        }
+        
+        /* 活跃状态的食材 */
+        .ingredient-item.active .img-container {
+            border: 2px solid #FFDD00;
+            box-shadow: 0 2px 8px rgba(255, 221, 0, 0.3);
+        }
+        
+        /* 食材图片滤镜 */
+        .ingredient-item .img-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(59, 59, 59, 0.2);
+            z-index: 1;
+        }
+        
+        /* 隐藏食材名称 */
+        .ingredient-name {
+            display: none;
+        }
+        
+        /* 菜谱列表 */
+        .recipe-section {
+            padding: 0 24px;
+            margin-top: 0;
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px; /* 调整为16px，使筛选器距离文字16px */
+            margin-top: 20px; /* 距离大白卡上边缘20px */
+            padding: 0; /* 移除内边距，统一布局 */
+        }
+        
+        .section-title {
+            font-size: 32px;
+            font-weight: 500;
+            color: #3D3D3D;
+            line-height: 44px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title::after {
+            content: '💡';
+            margin-left: 4px;
+        }
+        
+        .view-all {
+            font-size: 28px;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .recipe-list {
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+        
+        /* 食材面板 - 默认隐藏 */
+        .ingredient-panel {
+            display: none;
+        }
+        
+        /* 活跃的食材面板 */
+        .ingredient-panel.active {
+            display: block;
+        }
+        
+        /* 白色面板 - 新增 */
+        .white-panel {
+            background-color: #FFFFFF;
+            border-radius: 24px 24px 0 0;
+            margin-top: 24px; /* 距离识别食材的下边距离24px */
+            padding-top: 0; /* 移除内边距，由内部元素控制 */
+            padding-bottom: 32px;
+        }
+        
+        /* 菜谱标签容器 */
+        .recipe-tags-container {
+            display: flex;
+            overflow-x: auto;
+            gap: 12px;
+            padding: 0 0 16px 0;
+            margin: 16px 0;
+            padding-left: 24px;
+            padding-right: 24px;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .recipe-tags-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Edge */
+        }
+        
+        /* 菜谱卡片 - 3层结构 */
+        .recipe-card {
+            position: relative;
+            height: 348px;
+            margin-bottom: 16px;
+            border-radius: 24px;
+            overflow: hidden;
+        }
+        
+        /* 底层 - 白色半透明背景 + 模糊效果 */
+        .recipe-card-bottom {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 24px;
+            z-index: 1;
+        }
+        
+        /* 中层 - 清晰菜谱图 */
+        .recipe-card-middle {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: calc(100% - 6px);
+            height: calc(77% - 3px); /* 269px/348px */
+            border-radius: 22px;
+            overflow: hidden;
+            z-index: 2;
+        }
+        
+        .recipe-card-middle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 顶层 - 文字、按钮和其他元素 */
+        .recipe-card-top {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 24px;
+            padding: 18px 24px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        /* 顶层渐变遮罩 */
+        .recipe-card-overlay {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: calc(100% - 6px);
+            height: calc(77% - 3px);
+            border-radius: 22px;
+            background: linear-gradient(180deg, rgba(26, 26, 26, 0.63) 10%, rgba(53, 53, 53, 0) 53%);
+            z-index: 2;
+        }
+        
+        .recipe-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 12px;
+            line-height: 1.2;
+            position: relative;
+            z-index: 3;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            max-width: 80%;
+        }
+        
+        .recipe-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            position: relative;
+            z-index: 3;
+        }
+        
+        .recipe-tag {
+            font-size: 24px;
+            color: white;
+            margin-right: 0;
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* 食材展示区域 */
+        .recipe-ingredients {
+            position: absolute;
+            left: 24px;
+            width: calc(100% - 240px); /* 使用固定宽度，避免与按钮重叠 */
+            right: auto; /* 移除right属性，使用width控制 */
+            bottom: 10px; /* 由原来的20px下移到10px */
+            height: 145px;
+            display: flex;
+            justify-content: flex-start; /* 确保食材从左侧开始排列 */
+        }
+        
+        /* 单个食材卡片 */
+        .recipe-ingredient {
+            position: relative;
+            width: 92px;
+            text-align: center;
+            z-index: 1;
+        }
+        
+        /* 重置食材的z-index（使用JS手动控制） */
+        .recipe-ingredient:nth-child(1) { z-index: auto; }
+        .recipe-ingredient:nth-child(2) { z-index: auto; }
+        .recipe-ingredient:nth-child(3) { z-index: auto; }
+        .recipe-ingredient:nth-child(4) { z-index: auto; }
+        
+        /* 圆形图片容器 */
+        .ingredient-img {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            border: 2px solid white;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: #f5f5f5;
+            margin: 0 auto 10px;
+        }
+        
+        .ingredient-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        /* 食材名称标签 */
+        .ingredient-label {
+            font-size: 22px;
+            color: #3D3D3D;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 30px;
+            width: 100%;
+        }
+        
+        /* 已有标签 */
+        .ingredient-has {
+            position: absolute;
+            top: auto; /* 移除顶部定位 */
+            bottom: 50px; /* 调整位置,离圆形容器底部50px */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(39, 39, 39, 0.8);
+            color: white;
+            font-size: 18px;
+            padding: 0 8px;
+            border-radius: 30px;
+            height: 29px;
+            line-height: 29px;
+            white-space: nowrap;
+            z-index: 20; /* 提高z-index，确保标签始终显示在最上层 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 添加阴影增强可见性 */
+        }
+        
+        /* 食材购买按钮 */
+        .purchase-btn {
+            position: absolute;
+            bottom: 45px; /* 上移5px，从40px改为45px */
+            right: 24px;
+            background: linear-gradient(90deg, #343B45 0%, #272727 100%);
+            color: white;
+            border: none;
+            border-radius: 33px;
+            padding: 0 10px 0 18px; /* 减小内边距 */
+            height: 60px; /* 减小高度 */
+            font-size: 26px; /* 减小字体 */
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            z-index: 15; /* 提高层级，确保不会被食材遮挡 */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* 轻微的阴影效果 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            min-width: 110px;
+            max-width: 160px;
+            white-space: nowrap; /* 防止文字换行 */
+        }
+        
+        .purchase-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .purchase-btn-arrow {
+            width: 36px; /* 减小箭头区域宽度 */
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 8px; /* 减小左边距 */
+            font-size: 20px;
+        }
+        
+        /* 占位符样式 */
+        .placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            color: #999;
+            font-size: 24px;
+            text-align: center;
+            padding: 10px;
+        }
+        
+        /* 渐进式加载图片样式 */
+        .progressive-img {
+            opacity: 0;
+            transition: opacity 0.3s ease-in;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .progressive-img.loaded {
+            opacity: 1;
+        }
+        
+        /* 筛选器样式 */
+        .filter-container {
+            display: flex;
+            gap: 12px;
+            padding: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            margin-top: 0; /* 已由section-header的margin-bottom控制 */
+            margin-bottom: 12px; /* 菜谱卡片距离筛选器12px */
+        }
+        
+        .filter-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .filter-item {
+            height: 48px;
+            padding: 0 24px;
+            background-color: #F7F7F7;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        
+        .filter-text {
+            font-size: 24px;
+            color: #555555;
+        }
+        
+        /* 响应式调整 */
+        @media (max-width: 750px) {
+            .container {
+                width: 100%;
+            }
+            
+            .navbar {
+                height: 64px;
+                padding: 0 16px;
+            }
+            
+            .navbar .title {
+                font-size: 24px;
+            }
+            
+            .navbar .back {
+                width: 32px;
+                height: 32px;
+                font-size: 18px;
+            }
+            
+            .recognition-area {
+                padding: 16px;
+                margin-top: 24px;
+            }
+            
+            .ingredient-item {
+                min-width: 80px;
+            }
+            
+            .img-container {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .section-title {
+                font-size: 24px;
+            }
+            
+            .view-all {
+                font-size: 18px;
+            }
+            
+            .recipe-card {
+                height: 300px;
+            }
+            
+            .recipe-title {
+                font-size: 32px;
+            }
+            
+            .recipe-tag {
+                font-size: 18px;
+            }
+            
+            .ingredient-img {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .ingredient-label {
+                font-size: 16px;
+            }
+            
+            .purchase-btn {
+                padding: 12px 24px;
+                font-size: 20px;
+                border-radius: 24px;
+            }
+            
+            .purchase-btn-arrow {
+                width: 32px;
+                height: 32px;
+                margin-left: 8px;
+            }
+            
+            .filter-item {
+                height: 40px;
+                padding: 0 16px;
+            }
+            
+            .filter-text {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 顶部导航 -->
+        <div class="navbar">
+            <div class="back" onclick="goBack()">＜</div>
+            <div class="title">食材识别与菜谱推荐</div>
+            <div style="width: 44px;"></div>
+        </div>
+        
+        <!-- 食材识别区域 -->
+        <div class="recognition-area">
+            <div class="ingredients-list" id="ingredientsList">
+                <!-- 食材列表将通过JavaScript动态生成 -->
+            </div>
+        </div>
+        
+        <!-- 菜谱推荐区域 -->
+        <div class="white-panel">
+            <div id="recipePanels">
+                <!-- 菜谱面板将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 食材数据
+        const ingredients = [
+            {
+                id: 'asparagus',
+                name: '芦笋',
+                image: 'https://images.pexels.com/photos/273838/pexels-photo-273838.jpeg'
+            },
+            {
+                id: 'shrimp',
+                name: '虾仁',
+                image: 'https://images.unsplash.com/photo-1565680018434-b513d5e5fd47'
+            },
+            {
+                id: 'bacon',
+                name: '培根',
+                image: 'https://images.unsplash.com/photo-1528607929212-2636ec44253e'
+            },
+            {
+                id: 'steak',
+                name: '牛排',
+                image: 'https://images.unsplash.com/photo-1546964124-0cce460f38ef'
+            },
+            {
+                id: 'egg',
+                name: '鸡蛋',
+                image: 'https://images.unsplash.com/photo-1587486913049-53fc88980cfc'
+            },
+            {
+                id: 'tomato',
+                name: '番茄',
+                image: 'https://images.unsplash.com/photo-1561136594-7f68413baa99'
+            },
+            // 添加更多常用食材
+            {
+                id: 'pasta',
+                name: '意面',
+                image: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141'
+            },
+            {
+                id: 'rice',
+                name: '米饭',
+                image: 'https://images.unsplash.com/photo-1536304993881-ff6e9eefa2a6'
+            },
+            {
+                id: 'bread',
+                name: '面包',
+                image: 'https://images.unsplash.com/photo-1589367920969-ab8e050bbb04'
+            },
+            {
+                id: 'lettuce',
+                name: '生菜',
+                image: 'https://images.unsplash.com/photo-1622205313162-be1d5712a2e0'
+            },
+            {
+                id: 'mushroom',
+                name: '蘑菇',
+                image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836'
+            },
+            {
+                id: 'onion',
+                name: '洋葱',
+                image: 'https://images.unsplash.com/photo-1580201092675-a0a6a6cafbb1'
+            },
+            {
+                id: 'garlic',
+                name: '大蒜',
+                image: 'https://images.unsplash.com/photo-1540148426945-6cf22a6b2383'
+            },
+            {
+                id: 'potato',
+                name: '土豆',
+                image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655'
+            },
+            {
+                id: 'carrot',
+                name: '胡萝卜',
+                image: 'https://images.unsplash.com/photo-1590165482129-1b8b27698780'
+            },
+            {
+                id: 'pepper',
+                name: '彩椒',
+                image: 'https://images.unsplash.com/photo-1563565375-f3fdfdbefa83'
+            }
+        ];
+        
+        // 菜谱数据 - 每种食材对应6-8个菜谱
+        const recipes = {
+            asparagus: [
+                {
+                    id: 'asparagus_shrimp',
+                    title: '芦笋炒虾仁',
+                    image: 'https://images.pexels.com/photos/3184183/pexels-photo-3184183.jpeg',
+                    tags: ['快手菜', '15分钟'],
+                    time: '15分钟'
+                },
+                {
+                    id: 'asparagus_bacon',
+                    title: '香煎芦笋培根',
+                    image: 'https://images.pexels.com/photos/6275217/pexels-photo-6275217.jpeg',
+                    tags: ['家常菜', '20分钟'],
+                    time: '20分钟'
+                },
+                {
+                    id: 'asparagus_steak',
+                    title: '牛排配烤芦笋',
+                    image: 'https://images.pexels.com/photos/10325726/pexels-photo-10325726.jpeg',
+                    tags: ['西餐', '30分钟'],
+                    time: '30分钟'
+                },
+                {
+                    id: 'asparagus_salad',
+                    title: '芦笋沙拉',
+                    image: 'https://images.pexels.com/photos/6060858/pexels-photo-6060858.jpeg',
+                    tags: ['凉菜', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'asparagus_soup',
+                    title: '芦笋浓汤',
+                    image: 'https://images.pexels.com/photos/5865052/pexels-photo-5865052.jpeg',
+                    tags: ['汤品', '25分钟'],
+                    time: '25分钟'
+                },
+                {
+                    id: 'asparagus_pasta',
+                    title: '芦笋意面',
+                    image: 'https://images.pexels.com/photos/1279330/pexels-photo-1279330.jpeg',
+                    tags: ['意餐', '20分钟'],
+                    time: '20分钟'
+                }
+            ],
+            shrimp: [
+                {
+                    id: 'shrimp_garlic',
+                    title: '蒜蓉虾仁',
+                    image: 'https://images.unsplash.com/photo-1625944525533-473f1a3d54e7',
+                    tags: ['快手菜', '15分钟'],
+                    time: '15分钟'
+                },
+                {
+                    id: 'shrimp_egg',
+                    title: '虾仁炒蛋',
+                    image: 'https://images.unsplash.com/photo-1625944501841-279a4962ef68',
+                    tags: ['家常菜', '10分钟'],
+                    time: '10分钟'
+                },
+                // 添加更多虾仁菜谱...
+                {
+                    id: 'shrimp_pasta',
+                    title: '虾仁意面',
+                    image: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8',
+                    tags: ['意餐', '20分钟'],
+                    time: '20分钟'
+                },
+                {
+                    id: 'shrimp_fried_rice',
+                    title: '虾仁炒饭',
+                    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b',
+                    tags: ['主食', '15分钟'],
+                    time: '15分钟'
+                },
+                {
+                    id: 'shrimp_salad',
+                    title: '虾仁沙拉',
+                    image: 'https://images.unsplash.com/photo-1551248429-40975aa4de74',
+                    tags: ['凉菜', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'shrimp_soup',
+                    title: '虾仁豆腐汤',
+                    image: 'https://images.unsplash.com/photo-1626201850133-172331bdd6aa',
+                    tags: ['汤品', '20分钟'],
+                    time: '20分钟'
+                }
+            ],
+            // 其他食材的菜谱数据...
+            bacon: [
+                {
+                    id: 'bacon_egg',
+                    title: '培根煎蛋',
+                    image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8',
+                    tags: ['早餐', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'bacon_pasta',
+                    title: '培根意面',
+                    title: '培根意面',
+                    image: 'https://images.unsplash.com/photo-1595295333158-4742f28fbd85',
+                    tags: ['意餐', '20分钟'],
+                    time: '20分钟'
+                },
+                // 添加更多培根菜谱...
+                {
+                    id: 'bacon_sandwich',
+                    title: '培根三明治',
+                    image: 'https://images.unsplash.com/photo-1619096252214-ef06c45683e3',
+                    tags: ['早餐', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'bacon_potato',
+                    title: '培根土豆泥',
+                    image: 'https://images.unsplash.com/photo-1518679898075-9f59eef96448',
+                    tags: ['家常菜', '25分钟'],
+                    time: '25分钟'
+                },
+                {
+                    id: 'bacon_brussels',
+                    title: '培根烤球芽甘蓝',
+                    image: 'https://images.unsplash.com/photo-1584270354949-c26b0d5b4a0c',
+                    tags: ['西餐', '20分钟'],
+                    time: '20分钟'
+                },
+                {
+                    id: 'bacon_salad',
+                    title: '培根沙拉',
+                    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd',
+                    tags: ['凉菜', '15分钟'],
+                    time: '15分钟'
+                }
+            ],
+            steak: [
+                {
+                    id: 'steak_simple',
+                    title: '香煎牛排',
+                    image: 'https://images.unsplash.com/photo-1600891964092-4316c288032e',
+                    tags: ['西餐', '20分钟'],
+                    time: '20分钟'
+                },
+                // 添加更多牛排菜谱...
+                {
+                    id: 'steak_veg',
+                    title: '牛排配蔬菜',
+                    image: 'https://images.unsplash.com/photo-1504973960431-1c467e159aa4',
+                    tags: ['西餐', '30分钟'],
+                    time: '30分钟'
+                },
+                {
+                    id: 'steak_mushroom',
+                    title: '牛排配蘑菇酱',
+                    image: 'https://images.unsplash.com/photo-1546964124-0cce460f38ef',
+                    tags: ['西餐', '25分钟'],
+                    time: '25分钟'
+                },
+                {
+                    id: 'steak_sandwich',
+                    title: '牛排三明治',
+                    image: 'https://images.unsplash.com/photo-1511344407683-b1172dce025f',
+                    tags: ['快餐', '15分钟'],
+                    time: '15分钟'
+                },
+                {
+                    id: 'steak_salad',
+                    title: '牛排沙拉',
+                    image: 'https://images.unsplash.com/photo-1546793665-c74683f339c1',
+                    tags: ['轻食', '20分钟'],
+                    time: '20分钟'
+                },
+                {
+                    id: 'steak_rice',
+                    title: '牛排炒饭',
+                    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b',
+                    tags: ['主食', '15分钟'],
+                    time: '15分钟'
+                }
+            ],
+            egg: [
+                {
+                    id: 'egg_tomato',
+                    title: '番茄炒蛋',
+                    image: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d',
+                    tags: ['家常菜', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'egg_fried_rice',
+                    title: '蛋炒饭',
+                    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b',
+                    tags: ['主食', '15分钟'],
+                    time: '15分钟'
+                },
+                {
+                    id: 'egg_soup',
+                    title: '蛋花汤',
+                    image: 'https://images.unsplash.com/photo-1547592180-85f173990554',
+                    tags: ['汤品', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'egg_pancake',
+                    title: '鸡蛋饼',
+                    image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8',
+                    tags: ['早餐', '15分钟'],
+                    time: '15分钟'
+                },
+                {
+                    id: 'egg_custard',
+                    title: '蒸蛋羹',
+                    image: 'https://images.unsplash.com/photo-1555949258-eb67b1ef0ceb',
+                    tags: ['蒸菜', '20分钟'],
+                    time: '20分钟'
+                },
+                {
+                    id: 'egg_sandwich',
+                    title: '鸡蛋三明治',
+                    image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8',
+                    tags: ['早餐', '10分钟'],
+                    time: '10分钟'
+                }
+            ],
+            tomato: [
+                {
+                    id: 'tomato_egg',
+                    title: '番茄炒蛋',
+                    image: 'https://images.unsplash.com/photo-1590779033100-9f60a05a013d',
+                    tags: ['家常菜', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'tomato_soup',
+                    title: '番茄汤',
+                    image: 'https://images.unsplash.com/photo-1547592180-85f173990554',
+                    tags: ['汤品', '20分钟'],
+                    time: '20分钟'
+                },
+                {
+                    id: 'tomato_pasta',
+                    title: '番茄意面',
+                    image: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8',
+                    tags: ['意餐', '25分钟'],
+                    time: '25分钟'
+                },
+                {
+                    id: 'tomato_beef',
+                    title: '番茄炖牛肉',
+                    image: 'https://images.unsplash.com/photo-1504973960431-1c467e159aa4',
+                    tags: ['炖菜', '40分钟'],
+                    time: '40分钟'
+                },
+                {
+                    id: 'tomato_salad',
+                    title: '番茄沙拉',
+                    image: 'https://images.unsplash.com/photo-1551248429-40975aa4de74',
+                    tags: ['凉菜', '10分钟'],
+                    time: '10分钟'
+                },
+                {
+                    id: 'tomato_rice',
+                    title: '番茄炒饭',
+                    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b',
+                    tags: ['主食', '15分钟'],
+                    time: '15分钟'
+                }
+            ]
+        };
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 渲染食材列表
+            renderIngredients();
+            
+            // 移除页面底部的筛选器（因为我们会在每个面板中添加）
+            const filterContainer = document.getElementById('filterContainer');
+            if (filterContainer) {
+                filterContainer.remove();
+            }
+            
+            // 渲染菜谱面板
+            renderRecipePanels();
+            
+            // 获取上次选择的食材（如果有），否则默认选中第一个食材
+            const lastSelectedIngredient = localStorage.getItem('currentIngredient') || ingredients[0].id;
+            
+            // 激活选中的食材
+            activateIngredient(lastSelectedIngredient);
+            
+            // 处理图片加载
+            handleImages();
+        });
+        
+        // 渲染食材列表
+        function renderIngredients() {
+            const ingredientsList = document.getElementById('ingredientsList');
+            
+            ingredients.forEach(ingredient => {
+                const item = document.createElement('div');
+                item.className = 'ingredient-item';
+                item.dataset.id = ingredient.id;
+                
+                item.innerHTML = `
+                    <div class="img-container">
+                        <div class="placeholder">${ingredient.name}</div>
+                        <img src="${ingredient.image}" 
+                             class="progressive-img" 
+                             alt="${ingredient.name}">
+                    </div>
+                    <div class="ingredient-name">${ingredient.name}</div>
+                `;
+                
+                // 添加点击事件
+                item.addEventListener('click', function() {
+                    activateIngredient(ingredient.id);
+                });
+                
+                ingredientsList.appendChild(item);
+            });
+        }
+        
+        // 渲染所有菜谱面板
+        function renderRecipePanels() {
+            const recipePanels = document.getElementById('recipePanels');
+            
+            // 为每种食材创建面板
+            Object.keys(recipes).forEach(ingredientId => {
+                const panel = document.createElement('div');
+                panel.className = 'ingredient-panel';
+                panel.id = `${ingredientId}Panel`;
+                
+                // 获取食材名称
+                const ingredientName = ingredients.find(ing => ing.id === ingredientId)?.name || '';
+                
+                panel.innerHTML = `
+                    <div class="recipe-section">
+                        <div class="section-header">
+                            <div class="section-title">含"${ingredientName}"的菜谱灵感</div>
+                            <div class="view-all">查看全部 <span style="font-size: 20px; margin-left: 4px;">＞</span></div>
+                        </div>
+                        <!-- 筛选器区域 - 位于标题和菜谱卡片之间 -->
+                        <div class="filter-container">
+                            <div class="filter-item"><div class="filter-text">已有菜组合</div></div>
+                            <div class="filter-item"><div class="filter-text">家常菜</div></div>
+                            <div class="filter-item"><div class="filter-text">快手菜</div></div>
+                            <div class="filter-item"><div class="filter-text">凉菜</div></div>
+                            <div class="filter-item"><div class="filter-text">下饭菜</div></div>
+                        </div>
+                        <div class="recipe-list" id="${ingredientId}RecipeList"></div>
+                    </div>
+                `;
+                
+                recipePanels.appendChild(panel);
+                
+                // 渲染该食材的菜谱列表
+                renderRecipeList(ingredientId);
+            });
+        }
+        
+        // 渲染特定食材的菜谱列表
+        function renderRecipeList(ingredientId) {
+            const recipeList = document.getElementById(`${ingredientId}RecipeList`);
+            const recipeData = recipes[ingredientId] || [];
+            const ingredientName = ingredients.find(ing => ing.id === ingredientId)?.name || '';
+            
+            recipeData.forEach(recipe => {
+                // 创建菜谱卡片
+                const card = document.createElement('div');
+                card.className = 'recipe-card';
+                card.dataset.id = recipe.id;
+                
+                // 构建3层结构的卡片（完全按照设计稿）
+                card.innerHTML = `
+                    <!-- 底层 - 白色半透明背景 + 模糊效果 -->
+                    <div class="recipe-card-bottom">
+                        <!-- 底层的模糊背景图 -->
+                        <img src="${recipe.image}" 
+                             style="position: absolute; top: -5px; left: -5px; width: calc(100% + 10px); height: calc(100% + 10px); border-radius: 24px; object-fit: cover; opacity: 0.6; filter: blur(50px);"
+                             alt="${recipe.title}"
+                             onerror="this.style.display='none'">
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 24px; background-color: rgba(255, 255, 255, 0.5);"></div>
+                    </div>
+                    
+                    <!-- 中层 - 清晰菜谱图 -->
+                    <div class="recipe-card-middle">
+                        <div class="placeholder">${recipe.title}</div>
+                        <img src="${recipe.image}" 
+                             class="progressive-img" 
+                             alt="${recipe.title}"
+                             onload="this.classList.add('loaded')">
+                    </div>
+                    
+                    <!-- 顶层渐变遮罩 -->
+                    <div class="recipe-card-overlay"></div>
+                    
+                    <!-- 顶层 - 文字、按钮和其他元素 -->
+                    <div class="recipe-card-top">
+                        <div>
+                            <div class="recipe-title">${recipe.title}</div>
+                            <div class="recipe-tags">
+                                ${recipe.tags.map(tag => `<span class="recipe-tag">${tag}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // 创建食材展示区域
+                const ingredientsContainer = document.createElement('div');
+                ingredientsContainer.className = 'recipe-ingredients';
+                
+                // 菜谱必需食材映射表
+                const recipeEssentialIngredients = {
+                    '意面': ['pasta'],
+                    '意大利面': ['pasta'],
+                    '三明治': ['bread', 'lettuce'],
+                    '炒饭': ['rice'],
+                    '炒面': ['pasta'],
+                    '沙拉': ['lettuce'],
+                    '色拉': ['lettuce'],
+                    '汤': ['mushroom', 'carrot', 'onion'],
+                    '浓汤': ['mushroom', 'carrot', 'onion'],
+                    '炖': ['potato', 'carrot', 'onion'],
+                    '烤': ['garlic', 'onion'],
+                    '蒸': ['garlic'],
+                    '煎': ['garlic', 'onion'],
+                    '土豆泥': ['potato', 'garlic'],
+                    '牛排': ['steak'],
+                    '虾仁': ['shrimp'],
+                    '培根': ['bacon'],
+                    '芦笋': ['asparagus'],
+                    '番茄': ['tomato'],
+                    '鸡蛋': ['egg'],
+                    '蒜蓉': ['garlic'],
+                    '椒': ['pepper'],
+                    '胡萝卜': ['carrot'],
+                    '豆腐': ['garlic'],
+                    '蛋炒饭': ['rice', 'egg'],
+                    '虾仁炒饭': ['rice', 'shrimp'],
+                    '牛排炒饭': ['rice', 'steak'],
+                    '培根意面': ['pasta', 'bacon'],
+                    '虾仁意面': ['pasta', 'shrimp'],
+                    '芦笋意面': ['pasta', 'asparagus'],
+                    '番茄意面': ['pasta', 'tomato'],
+                    '培根三明治': ['bread', 'bacon', 'lettuce'],
+                    '鸡蛋三明治': ['bread', 'egg', 'lettuce'],
+                    '牛排三明治': ['bread', 'steak', 'lettuce'],
+                    '芦笋沙拉': ['lettuce', 'asparagus'],
+                    '虾仁沙拉': ['lettuce', 'shrimp'],
+                    '番茄沙拉': ['lettuce', 'tomato'],
+                    '牛排沙拉': ['lettuce', 'steak'],
+                    '培根沙拉': ['lettuce', 'bacon'],
+                    '芦笋浓汤': ['asparagus', 'onion', 'garlic'],
+                    '芦笋炒虾仁': ['asparagus', 'shrimp']
+                };
+                
+                // 关键字与食材的映射 - 当菜谱名称中包含某个关键字但没有直接对应食材时使用
+                const keywordIngredientMapping = {
+                    '牛肉': ['steak'],
+                    '猪肉': ['bacon'],
+                    '豆腐': ['mushroom', 'garlic'],
+                    '鱼': ['garlic', 'onion'],
+                    '鸡': ['garlic', 'carrot'],
+                    '肉': ['onion', 'garlic'],
+                    '色拉': ['lettuce', 'tomato'],
+                    '意大利': ['pasta'],
+                    '西餐': ['steak', 'pasta'],
+                    '中餐': ['rice'],
+                    '早餐': ['egg', 'bread'],
+                    '午餐': ['rice', 'pasta'],
+                    '晚餐': ['potato', 'steak']
+                };
+                
+                // 获取主食材列表
+                let mainIngredients = [];
+                
+                // 1. 优先从菜谱名称中提取食材
+                for (const ing of ingredients) {
+                    if (recipe.title.includes(ing.name)) {
+                        mainIngredients.push(ing);
+                    }
+                }
+                
+                // 1.5 检查关键字映射，如果菜谱名称中包含特定关键字但没有找到对应食材
+                if (mainIngredients.length === 0) {
+                    for (const [keyword, ingIds] of Object.entries(keywordIngredientMapping)) {
+                        if (recipe.title.includes(keyword)) {
+                            for (const ingId of ingIds) {
+                                const keywordIng = ingredients.find(ing => ing.id === ingId);
+                                if (keywordIng && !mainIngredients.some(mi => mi.id === keywordIng.id)) {
+                                    mainIngredients.push(keywordIng);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // 2. 检查菜谱特定类型，添加必需食材
+                for (const [recipeType, requiredIngIds] of Object.entries(recipeEssentialIngredients)) {
+                    if (recipe.title.includes(recipeType)) {
+                        for (const ingId of requiredIngIds) {
+                            const essentialIng = ingredients.find(ing => ing.id === ingId);
+                            if (essentialIng && !mainIngredients.some(mi => mi.id === essentialIng.id)) {
+                                // 如果这是一个必需食材且尚未添加，则添加它
+                                mainIngredients.push(essentialIng);
+                            }
+                        }
+                    }
+                }
+                
+                // 3. 如果菜谱ID中有食材信息，也考虑这些信息
+                const recipeIdParts = recipe.id.split('_');
+                if (recipeIdParts.length > 1) {
+                    const mainIngredientId = recipeIdParts[0];
+                    const secondIngredientId = recipeIdParts[1];
+                    
+                    // 添加主食材（ID中的第一个食材）
+                    const mainIng = ingredients.find(ing => ing.id === mainIngredientId);
+                    if (mainIng && !mainIngredients.some(mi => mi.id === mainIng.id)) {
+                        mainIngredients.push(mainIng);
+                    }
+                    
+                    // 添加第二个食材（ID中的第二个食材）
+                    const secondIng = ingredients.find(ing => ing.id === secondIngredientId);
+                    if (secondIng && !mainIngredients.some(mi => mi.id === secondIng.id)) {
+                        mainIngredients.push(secondIng);
+                    }
+                }
+                
+                // 随机决定显示2个还是3个食材（70%概率显示3个）
+                const showThreeIngredients = Math.random() < 0.7;
+                const minIngredients = 2; // 最少显示2个食材
+                const maxIngredients = showThreeIngredients ? 3 : 2; // 最多显示2个或3个食材
+                
+                // 如果已经有超过最大数量的食材，优先保留菜谱名称中提到的食材
+                if (mainIngredients.length > maxIngredients) {
+                    // 先排序：1. 菜谱名称中的食材优先 2. 必需食材其次 3. 其他食材最后
+                    mainIngredients.sort((a, b) => {
+                        const aInTitle = recipe.title.includes(a.name);
+                        const bInTitle = recipe.title.includes(b.name);
+                        
+                        if (aInTitle && !bInTitle) return -1;
+                        if (!aInTitle && bInTitle) return 1;
+                        return 0;
+                    });
+                    
+                    // 保留排序后的前maxIngredients个食材
+                    mainIngredients = mainIngredients.slice(0, maxIngredients);
+                }
+                
+                // 确保至少有最少数量的食材
+                if (mainIngredients.length < minIngredients) {
+                    // 根据菜谱类型，推荐常见的搭配食材
+                    const commonPairings = {
+                        '牛排': ['洋葱', '蘑菇', '土豆', '胡椒', '大蒜'],
+                        '虾': ['蒜', '葱', '姜', '芦笋', '胡萝卜', '西兰花'],
+                        '鸡蛋': ['番茄', '葱', '牛奶', '火腿', '芝士', '豆腐'],
+                        '意面': ['番茄', '蒜', '洋葱', '橄榄油', '罗勒', '芝士'],
+                        '沙拉': ['番茄', '黄瓜', '生菜', '柠檬', '橄榄油'],
+                        '汤': ['洋葱', '胡萝卜', '芹菜', '姜'],
+                        '三明治': ['生菜', '番茄', '芝士', '火腿'],
+                        '炒饭': ['鸡蛋', '葱', '胡萝卜', '豌豆'],
+                        '炒面': ['葱', '蒜', '胡萝卜', '彩椒']
+                    };
+                    
+                    // 寻找菜谱类型
+                    let recipeType = null;
+                    for (const [type, _] of Object.entries(commonPairings)) {
+                        if (recipe.title.includes(type)) {
+                            recipeType = type;
+                            break;
+                        }
+                    }
+                    
+                    // 尝试添加常见搭配食材
+                    if (recipeType && commonPairings[recipeType]) {
+                        const commonIngs = [];
+                        for (const ingName of commonPairings[recipeType]) {
+                            const ing = ingredients.find(i => i.name.includes(ingName) || ingName.includes(i.name));
+                            if (ing && !mainIngredients.some(mi => mi.id === ing.id)) {
+                                commonIngs.push(ing);
+                            }
+                        }
+                        
+                        // 随机选择一些常见食材添加
+                        if (commonIngs.length > 0) {
+                            const shuffled = [...commonIngs].sort(() => 0.5 - Math.random());
+                            mainIngredients = [...mainIngredients, ...shuffled.slice(0, minIngredients - mainIngredients.length)];
+                        }
+                    }
+                    
+                    // 如果仍不足最少数量，再考虑添加随机食材
+                    if (mainIngredients.length < minIngredients) {
+                        const otherIngredients = ingredients.filter(ing => !mainIngredients.some(mi => mi.id === ing.id));
+                        const shuffled = [...otherIngredients].sort(() => 0.5 - Math.random());
+                        mainIngredients = [...mainIngredients, ...shuffled.slice(0, minIngredients - mainIngredients.length)];
+                    }
+                }
+                
+                // 如果需要显示3个食材但当前不足3个，优先添加与菜谱或现有食材相关的食材
+                if (showThreeIngredients && mainIngredients.length < maxIngredients) {
+                    // 获取可能的相关食材（与菜谱类型或现有食材相关的）
+                    const relatedIngredients = [];
+                    
+                    // 检查是否有与菜谱名称相关的其他食材
+                    for (const ing of ingredients) {
+                        if (!mainIngredients.some(mi => mi.id === ing.id)) {
+                            // 检查这个食材是否与菜谱名称或现有食材相关
+                            const isRelatedToRecipe = recipe.title.toLowerCase().includes(ing.name.toLowerCase());
+                            const isRelatedToCurrentIngredients = mainIngredients.some(mi => 
+                                mi.name.toLowerCase().includes(ing.name.toLowerCase()) || 
+                                ing.name.toLowerCase().includes(mi.name.toLowerCase())
+                            );
+                            
+                            if (isRelatedToRecipe || isRelatedToCurrentIngredients) {
+                                relatedIngredients.push(ing);
+                            }
+                        }
+                    }
+                    
+                    // 添加相关食材
+                    if (relatedIngredients.length > 0) {
+                        const shuffled = [...relatedIngredients].sort(() => 0.5 - Math.random());
+                        mainIngredients = [...mainIngredients, ...shuffled.slice(0, maxIngredients - mainIngredients.length)];
+                    } else {
+                        // 如果没有明显相关的食材，添加一个随机的常见辅料
+                        const commonCondiments = ingredients.filter(ing => 
+                            ['盐', '胡椒', '酱油', '醋', '糖', '料酒', '油', '蒜', '姜', '葱'].some(name => 
+                                ing.name.includes(name)
+                            ) && !mainIngredients.some(mi => mi.id === ing.id)
+                        );
+                        
+                        if (commonCondiments.length > 0) {
+                            const shuffled = [...commonCondiments].sort(() => 0.5 - Math.random());
+                            mainIngredients = [...mainIngredients, ...shuffled.slice(0, maxIngredients - mainIngredients.length)];
+                        } else {
+                            // 最后才考虑添加随机食材
+                            const otherIngredients = ingredients.filter(ing => !mainIngredients.some(mi => mi.id === ing.id));
+                            if (otherIngredients.length > 0) {
+                                const shuffled = [...otherIngredients].sort(() => 0.5 - Math.random());
+                                mainIngredients = [...mainIngredients, ...shuffled.slice(0, maxIngredients - mainIngredients.length)];
+                            }
+                        }
+                    }
+                }
+                
+                // 食材排序逻辑：
+                // 1. 菜谱名称中出现的食材优先
+                // 2. "已有"的食材（当前选中的食材被视为"已有"）其次
+                // 3. 其他食材最后
+                mainIngredients.sort((a, b) => {
+                    const aInTitle = recipe.title.includes(a.name);
+                    const bInTitle = recipe.title.includes(b.name);
+                    const aIsAvailable = a.id === ingredientId;
+                    const bIsAvailable = b.id === ingredientId;
+                    
+                    // 优先级1：菜谱标题中的食材
+                    if (aInTitle && !bInTitle) return -1;
+                    if (!aInTitle && bInTitle) return 1;
+                    
+                    // 优先级2：已有的食材，但要确保不会导致必需的主要食材被排除
+                    // 如培根意面，不能因为已有培根而排除意面
+                    const recipeMainType = Object.keys(recipeEssentialIngredients).find(type => recipe.title.includes(type));
+                    if (recipeMainType) {
+                        const essentialIngIds = recipeEssentialIngredients[recipeMainType];
+                        const aIsEssential = essentialIngIds.includes(a.id);
+                        const bIsEssential = essentialIngIds.includes(b.id);
+                        
+                        // 必需食材优先于已有食材
+                        if (aIsEssential && !bIsEssential) return -1;
+                        if (!aIsEssential && bIsEssential) return 1;
+                    }
+                    
+                    // 如果都不是必需食材或都是必需食材，则已有食材优先
+                    if (aIsAvailable && !bIsAvailable) return -1;
+                    if (!aIsAvailable && bIsAvailable) return 1;
+                    
+                    return 0;
+                });
+                
+                // 渲染食材列表
+                mainIngredients.forEach((ing, index) => {
+                    const ingElement = document.createElement('div');
+                    ingElement.className = 'recipe-ingredient';
+                    
+                    // 检查此食材是否"已有"（当前选中的食材被视为"已有"）
+                    const isAvailable = ing.id === ingredientId;
+                    
+                    // 确保z-index正确，前面的食材层级更高
+                    const zIndex = 10 - index; // 使用更高的z-index值
+                    ingElement.style.zIndex = zIndex;
+                    
+                    // 根据索引调整左边距，让每个食材都能清晰可见
+                    if (index > 0) {
+                        ingElement.style.marginLeft = '-20px'; // 使用负边距创建重叠效果
+                    }
+                    
+                    // 构建食材HTML
+                    let ingredientHtml = `
+                        <div class="ingredient-img">
+                            <img src="${ing.image}" alt="${ing.name}">
+                        </div>
+                        <div class="ingredient-label">${ing.name}</div>
+                    `;
+                    
+                    // 如果是"已有"食材，添加标签
+                    if (isAvailable) {
+                        ingredientHtml += `<div class="ingredient-has">已有</div>`;
+                    }
+                    
+                    ingElement.innerHTML = ingredientHtml;
+                    ingredientsContainer.appendChild(ingElement);
+                });
+                
+                // 添加购买按钮
+                const purchaseBtn = document.createElement('button');
+                purchaseBtn.className = 'purchase-btn';
+                purchaseBtn.innerHTML = `食材选购<div class="purchase-btn-arrow">＞</div>`;
+                purchaseBtn.onclick = function() { goToPurchase(recipe.id); };
+                
+                // 确保购买按钮和食材容器不重叠
+                if (mainIngredients.length >= 3) {
+                    // 如果有3个食材，调整购买按钮的位置
+                    purchaseBtn.style.right = '24px';
+                } else {
+                    // 如果只有2个食材，可以将按钮向左移动
+                    purchaseBtn.style.right = '40px';
+                }
+                
+                // 将食材展示区域和购买按钮添加到卡片
+                card.appendChild(ingredientsContainer);
+                card.appendChild(purchaseBtn);
+                
+                recipeList.appendChild(card);
+            });
+        }
+        
+        // 激活特定食材
+        function activateIngredient(ingredientId) {
+            // 保存当前选择的食材
+            localStorage.setItem('currentIngredient', ingredientId);
+            
+            // 更新食材列表UI
+            const ingredients = document.querySelectorAll('.ingredient-item');
+            ingredients.forEach(item => {
+                if (item.dataset.id === ingredientId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // 更新菜谱面板UI
+            const panels = document.querySelectorAll('.ingredient-panel');
+            panels.forEach(panel => {
+                if (panel.id === `${ingredientId}Panel`) {
+                    panel.classList.add('active');
+                } else {
+                    panel.classList.remove('active');
+                }
+            });
+        }
+        
+        // 处理图片加载
+        function handleImages() {
+            const images = document.querySelectorAll('.progressive-img');
+            
+            images.forEach(img => {
+                if (img.complete && !img.naturalWidth == 0) {
+                    img.classList.add('loaded');
+                } else {
+                    img.addEventListener('load', function() {
+                        this.classList.add('loaded');
+                    });
+                    
+                    img.addEventListener('error', function() {
+                        // 获取图片的alt文本（食材或菜谱名称）
+                        const altText = this.alt || '加载失败';
+                        
+                        // 获取父容器
+                        const container = this.parentNode;
+                        
+                        // 隐藏失败的图片
+                        this.style.display = 'none';
+                        
+                        // 查找或创建占位符
+                        let placeholder = container.querySelector('.placeholder');
+                        if (!placeholder) {
+                            placeholder = document.createElement('div');
+                            placeholder.className = 'placeholder';
+                            container.appendChild(placeholder);
+                        }
+                        
+                        // 设置占位符样式和内容
+                        placeholder.style.display = 'flex';
+                        placeholder.style.backgroundColor = '#f0f0f0';
+                        placeholder.style.color = '#666';
+                        placeholder.textContent = altText;
+                        
+                        // 如果是圆形容器（食材图片），添加特殊样式
+                        if (container.classList.contains('img-container')) {
+                            placeholder.style.borderRadius = '50%';
+                        }
+                    });
+                }
+            });
+        }
+        
+        // 跳转到购买页
+        function goToPurchase(recipeId) {
+            // 获取完整的菜谱对象
+            const ingredientId = localStorage.getItem('currentIngredient') || ingredients[0].id;
+            const recipeData = recipes[ingredientId] || [];
+            const selectedRecipe = recipeData.find(r => r.id === recipeId);
+            
+            if (selectedRecipe) {
+                // 将完整的菜谱对象转换为JSON字符串保存
+                const recipeWithIngredients = {
+                    ...selectedRecipe,
+                    ingredients: []
+                };
+                
+                // 获取菜谱中的食材
+                const recipeIdParts = recipeId.split('_');
+                if (recipeIdParts.length > 1) {
+                    const mainIngredientId = recipeIdParts[0];
+                    const secondIngredientId = recipeIdParts[1];
+                    
+                    // 添加主食材，标记为"已有"
+                    const mainIng = ingredients.find(ing => ing.id === mainIngredientId);
+                    if (mainIng) {
+                        recipeWithIngredients.ingredients.push({
+                            name: mainIng.name,
+                            image: mainIng.image,
+                            has: mainIng.id === ingredientId
+                        });
+                    }
+                    
+                    // 添加第二个食材
+                    const secondIng = ingredients.find(ing => ing.id === secondIngredientId);
+                    if (secondIng) {
+                        recipeWithIngredients.ingredients.push({
+                            name: secondIng.name,
+                            image: secondIng.image,
+                            has: secondIng.id === ingredientId
+                        });
+                    }
+                }
+                
+                // 确保至少有2个食材
+                if (recipeWithIngredients.ingredients.length < 2) {
+                    // 提取菜谱标题中可能包含的食材
+                    const titleIngredients = ingredients.filter(ing => 
+                        !recipeWithIngredients.ingredients.some(ri => ri.name === ing.name) && 
+                        selectedRecipe.title.includes(ing.name)
+                    );
+                    
+                    if (titleIngredients.length > 0) {
+                        // 优先添加标题中提到的食材
+                        titleIngredients.slice(0, 2 - recipeWithIngredients.ingredients.length).forEach(ing => {
+                            recipeWithIngredients.ingredients.push({
+                                name: ing.name,
+                                image: ing.image,
+                                has: ing.id === ingredientId
+                            });
+                        });
+                    }
+                    
+                    // 如果还不足2个，添加随机食材
+                    if (recipeWithIngredients.ingredients.length < 2) {
+                        const otherIngredients = ingredients.filter(ing => 
+                            !recipeWithIngredients.ingredients.some(ri => ri.name === ing.name)
+                        );
+                        const shuffled = [...otherIngredients].sort(() => 0.5 - Math.random());
+                        shuffled.slice(0, 2 - recipeWithIngredients.ingredients.length).forEach(ing => {
+                            recipeWithIngredients.ingredients.push({
+                                name: ing.name,
+                                image: ing.image,
+                                has: ing.id === ingredientId
+                            });
+                        });
+                    }
+                }
+                
+                // 保存完整菜谱对象
+                localStorage.setItem('selectedRecipe', JSON.stringify(recipeWithIngredients));
+            } else {
+                // 如果找不到菜谱，只保存ID
+                localStorage.setItem('selectedRecipe', recipeId);
+            }
+            
+            // 跳转到购买页
+            window.location.href = `purchase.html?recipe=${recipeId}`;
+        }
+        
+        // 返回上一页
+        function goBack() {
+            window.location.href = 'recognition.html';
+        }
+    </script>
+</body>
+</html> 

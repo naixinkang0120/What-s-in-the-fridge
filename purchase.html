@@ -1,0 +1,2297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食材识别 - 食材选购</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Source Han Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        body {
+            background-color: #f9f9f9; /* 修改为设计文件中指定的颜色 */
+            background: #f9f9f9; /* 移除渐变，使用纯色 */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            position: relative;
+            width: 750px;
+            min-height: 100vh; /* 使用最小高度而不是固定高度 */
+            margin: 0 auto;
+            overflow: hidden;
+            padding-bottom: 160px; /* 为底部结算栏留出空间 */
+            border: 1px solid #ddd;
+            border-radius: 60px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            background-color: #f9f9f9; /* 修改为设计文件中指定的颜色 */
+        }
+        
+        .header {
+            padding: 60px 32px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: transparent; /* 去掉白色背景 */
+            position: absolute; /* 使头部悬浮在图片上方 */
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 10;
+            border-bottom: none; /* 去掉底部边框 */
+            box-shadow: none; /* 去掉阴影 */
+        }
+        
+        .back-button {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.3); /* 半透明黑色背景 */
+            border-radius: 22px;
+            cursor: pointer;
+        }
+        
+        .back-icon {
+            width: 24px;
+            height: 24px;
+            color: #FFFFFF; /* 白色图标 */
+        }
+        
+        .header-title {
+            font-size: 36px;
+            font-weight: 600;
+            color: #FFFFFF; /* 白色文字 */
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); /* 添加文字阴影增强可读性 */
+        }
+        
+        /* 顶部按钮区域 */
+        .header-buttons {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+        }
+        
+        /* 购物车按钮 */
+        .cart-button {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 22px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        /* 购物车角标 */
+        .cart-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 24px;
+            height: 24px;
+            border-radius: 12px;
+            background-color: #FF3F22;
+            display: none; /* 默认不显示角标 */
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .cart-badge-text {
+            font-size: 16px;
+            color: #FFFFFF;
+            font-weight: bold;
+        }
+        
+        /* 分享按钮 */
+        .share-button {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 22px;
+            cursor: pointer;
+        }
+        
+        .scroll-container {
+            height: auto; /* 使用自动高度而不是固定计算高度 */
+            min-height: calc(100vh - 480px); /* 最小高度，减去图片高度 */
+            overflow-y: auto;
+            padding-bottom: 200px; /* 为底部结算栏留出额外滚动空间 */
+            padding-top: 0; /* 移除顶部内边距 */
+            background-color: #f9f9f9; /* 修改为设计文件中指定的颜色 */
+        }
+        
+        .recipe-header {
+            background-color: transparent; /* 移除白色背景 */
+            padding-bottom: 0;
+            border-radius: 0;
+            margin-bottom: 0;
+            box-shadow: none; /* 移除阴影 */
+            position: relative;
+        }
+        
+        .recipe-image {
+            width: 100%;
+            height: 480px; /* 增加高度 */
+            object-fit: cover;
+            filter: brightness(0.9); /* 轻微降低亮度使顶部元素更易读 */
+            margin-top: 0; /* 确保图片顶到顶部 */
+        }
+        
+        /* 添加顶部渐变遮罩 */
+        .recipe-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%);
+            z-index: 1;
+        }
+        
+        .recipe-info {
+            padding: 24px 24px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.85) 0%, #f9f9f9 50%);
+            border-radius: 24px 24px 0 0; /* 圆角只在顶部 */
+            margin-top: -125px; /* 上移，与图片重叠125px */
+            position: relative;
+            z-index: 2;
+        }
+        
+        .recipe-name {
+            font-size: 40px;
+            font-weight: bold;
+            color: #000000;
+            margin-bottom: 16px;
+        }
+        
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .tag-item {
+            background-color: #F0F0F0;
+            border-radius: 8px;
+            padding: 8px 16px;
+            margin-right: 0;
+            margin-bottom: 0;
+        }
+        
+        .tag-text {
+            font-size: 24px;
+            color: #666666;
+        }
+        
+        /* 确保section容器正确显示 */
+        .section {
+            background-color: #FFFFFF;
+            margin: 16px 32px;
+            padding: 24px 14px; /* 修改左右内边距为14px，与6px的combo-container边距结合 */
+            border-radius: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            overflow: visible; /* 确保内容不被裁剪 */
+        }
+        
+        .ingredients-section {
+            background-color: #FFFFFF;
+            margin: 16px 32px;
+            padding: 32px;
+            border-radius: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+        
+        .section-title {
+            font-size: 36px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 6px; /* 从24px改为6px，距离副标题6px */
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        
+        .view-more {
+            font-size: 28px;
+            color: #999999;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .view-more-icon {
+            width: 16px;
+            height: 16px;
+            margin-left: 4px;
+            transition: transform 0.2s;
+        }
+        
+        .section-subtitle {
+            font-size: 28px;
+            color: #999999;
+            margin-top: 0;
+            margin-bottom: 16px; /* 改为16px，距离商品卡片16px */
+        }
+        
+        .combo-container {
+            border: none;
+            padding: 0;
+            margin-top: 16px; /* 从20px改为16px */
+            background-color: transparent; /* 改为透明背景 */
+            border-radius: 0; /* 移除圆角 */
+            box-shadow: none; /* 移除阴影 */
+            border: none; /* 移除红色描边 */
+            margin-left: 6px; /* 与section容器左边距为6px */
+            margin-right: 6px; /* 与section容器右边距为6px */
+        }
+        
+        .combo-cards {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px; /* 卡片间距设为10px */
+            padding: 0 0 22px; /* 只保留底部间距22px */
+            margin: 0; /* 移除margin，由combo-container控制 */
+            scrollbar-width: none; /* 隐藏Firefox滚动条 */
+            -ms-overflow-style: none; /* 隐藏IE滚动条 */
+            border: none; /* 移除蓝色描边 */
+            overflow-x: hidden; /* 移除水平滚动 */
+        }
+        
+        .combo-cards::-webkit-scrollbar {
+            display: none; /* 隐藏Chrome滚动条 */
+        }
+        
+        .combo-card {
+            flex: 1; /* 让卡片自动适应宽度 */
+            min-width: 0; /* 允许卡片缩小 */
+            height: 366px;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 0; /* 移除内边距，使图片与卡片无距离 */
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            background-color: #FFFFFF;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-right: 0; /* 移除右边距，使用gap控制间距 */
+            overflow: hidden; /* 确保图片不会超出卡片边界 */
+        }
+        
+        .combo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .combo-card-image {
+            width: 100%; /* 宽度设为100%，适应卡片宽度 */
+            height: 222px;
+            border-radius: 0; /* 移除圆角，与卡片边缘对齐 */
+            object-fit: cover;
+            margin-bottom: 0; /* 移除底部间距 */
+            filter: brightness(0.98); /* 降低亮度2%形成黑色蒙层效果 */
+            position: relative;
+        }
+        
+        /* 添加图片蒙层通用类 */
+        .image-overlay {
+            position: relative;
+            display: inline-block;
+            width: 100%; /* 确保宽度100% */
+            height: 222px; /* 固定高度 */
+            margin-bottom: 8px; /* 图片距离商品名称间距为8px */
+        }
+        
+        .image-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.02); /* 2%的黑色蒙层 */
+            border-radius: 0; /* 移除圆角，与卡片边缘对齐 */
+            pointer-events: none; /* 确保蒙层不影响点击事件 */
+        }
+        
+        .combo-card-name {
+            font-size: 28px;
+            color: #3D3D3D;
+            line-height: 36px;
+            margin-top: 0;
+            padding: 0 8px;
+            height: 72px;
+            overflow: hidden;
+            margin-bottom: 16px; /* 商品名称距离价格距离为16px */
+        }
+        
+        .combo-card-price {
+            font-size: 32px;
+            color: #FF3F22;
+            font-weight: 500;
+            margin-top: 0;
+            padding: 0 8px;
+        }
+        
+        .combo-card-original {
+            font-size: 22px;
+            color: #C2C2C2;
+            text-decoration: line-through;
+            padding: 0 8px;
+            margin-top: 4px;
+            display: none; /* 在组合购买section中不展示划线价格 */
+        }
+        
+        /* 在"更多选择"和"低价囤货"section中显示划线价格 */
+        .recommend-item .combo-card-original,
+        #recommend-list .recommend-item-original,
+        #grocery-list .recommend-item-original {
+            display: block; /* 显示划线价格 */
+        }
+        
+        .combo-card-add {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 48px; /* 按钮尺寸为48*48 */
+            height: 48px;
+            border-radius: 24px;
+            background: linear-gradient(90deg, #343B45 0%, #272727 100%);
+            display: flex;
+            justify-content: center; /* 确保加号水平居中 */
+            align-items: center; /* 确保加号垂直居中 */
+            cursor: pointer;
+            box-shadow: none;
+        }
+        
+        .combo-card-add-text {
+            font-size: 26px;
+            font-weight: bold;
+            color: #FFFFFF;
+            line-height: 26px; /* 确保加号垂直居中 */
+            text-align: center; /* 确保加号水平居中 */
+        }
+        
+        .combo-card-tag {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: #EEF6FC;
+            color: #0166C8;
+            font-size: 22px;
+            padding: 2px 10px;
+            border-radius: 6px;
+        }
+        
+        .has-tag-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: #272727CC;
+            color: #FFFFFF;
+            font-size: 18px;
+            padding: 2px 10px;
+            border-radius: 30px;
+        }
+        
+        .combo-footer {
+            display: flex;
+            justify-content: flex-end; /* 改为右对齐 */
+            align-items: flex-start; 
+            border-top: none; /* 删除分割线 */
+            padding: 0 0 22px; /* 只保留底部padding */
+            margin-top: 0;
+            gap: 8px; /* 保留按钮与价格区域的间距 */
+        }
+        
+        .combo-price {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* 添加右对齐 */
+        }
+        
+        .combo-price-top {
+            display: flex;
+            align-items: center;
+            gap: 8px; /* 组合购买价与价格之间的间距 */
+        }
+        
+        .combo-price-label {
+            font-size: 28px;
+            color: #555555;
+            margin-bottom: 0; /* 确保与价格紧凑 */
+            line-height: 42px; /* 增加行高与按钮文字对齐 */
+        }
+        
+        .combo-price-value {
+            font-size: 36px;
+            font-weight: 500;
+            color: #FF3F22;
+            margin-top: 0; /* 确保与标签紧凑 */
+            line-height: 42px; /* 确保与按钮文字对齐 */
+        }
+        
+        .combo-price-original {
+            font-size: 24px;
+            color: #C2C2C2;
+            text-decoration: line-through;
+            margin-top: 4px; /* 添加与价格的间距 */
+            text-align: right; /* 添加文本右对齐 */
+        }
+        
+        .add-cart-button {
+            background: linear-gradient(90deg, #343B45 0%, #272727 100%);
+            padding: 12px 24px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            box-shadow: none;
+            margin-top: 0; /* 确保顶部对齐 */
+            height: 66px; /* 设置固定高度 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .add-cart-button:hover {
+            transform: scale(1.02);
+        }
+        
+        .add-cart-button-text {
+            font-size: 30px;
+            font-weight: 400;
+            color: #FFFFFF;
+        }
+        
+        /* 修改推荐列表容器样式 */
+        .recommend-list {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px 0;
+            gap: 16px;
+            margin: 0 6px; /* 添加左右边距 */
+            scrollbar-width: none; /* 隐藏Firefox滚动条 */
+            -ms-overflow-style: none; /* 隐藏IE滚动条 */
+            min-height: 366px; /* 确保容器有足够高度，与卡片高度一致 */
+            max-width: 100%; /* 确保不超出父容器 */
+        }
+        
+        .recommend-list::-webkit-scrollbar {
+            display: none; /* 隐藏Chrome滚动条 */
+        }
+        
+        .recommend-item {
+            width: 222px;
+            min-width: 222px;
+            height: 366px;
+            border-radius: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 0;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            margin-right: 0;
+            background-color: #FFFFFF;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            overflow: hidden; /* 确保图片不超出边界 */
+        }
+        
+        .recommend-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 确保图片正确显示 */
+        .recommend-item .image-overlay {
+            position: relative;
+            display: inline-block;
+            width: 100%; /* 确保宽度100% */
+            height: 222px; /* 固定高度 */
+            margin-bottom: 8px; /* 图片距离商品名称间距为8px */
+            overflow: hidden; /* 确保图片不超出容器 */
+        }
+        
+        .recommend-item .image-overlay::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.02); /* 2%的黑色蒙层 */
+            border-radius: 0; /* 移除圆角，与卡片边缘对齐 */
+            pointer-events: none; /* 确保蒙层不影响点击事件 */
+        }
+        
+        .recommend-item-name {
+            font-size: 28px;
+            color: #3D3D3D;
+            line-height: 36px;
+            margin: 8px 0 16px;
+            padding: 0 8px;
+            height: 72px; /* 修改为两行高度 */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal; /* 允许换行 */
+            font-weight: normal;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* 限制为最多两行 */
+            -webkit-box-orient: vertical;
+        }
+        
+        .recommend-item-price {
+            font-size: 32px;
+            color: #FF3F22;
+            font-weight: 500;
+            margin-top: 0; /* 调整与商品名称的距离 */
+            padding: 0 8px;
+            text-align: left;
+        }
+        
+        .recommend-item-original {
+            font-size: 24px;
+            color: #C2C2C2;
+            text-decoration: line-through;
+            padding: 0 8px;
+            text-align: left;
+            margin-bottom: 16px; /* 与底部保持间距 */
+        }
+        
+        .recommend-add-button {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: linear-gradient(90deg, #343B45 0%, #272727 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            box-shadow: none;
+            z-index: 2; /* 确保按钮在最上层 */
+        }
+        
+        .recommend-add-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .recommend-add-button-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+        
+        .recommend-item-image {
+            width: 100%;
+            height: 222px;
+            object-fit: cover;
+            border-radius: 0; /* 移除圆角，与卡片边缘对齐 */
+        }
+        
+        .grocery-list {
+            display: flex;
+            overflow-x: auto;
+            padding: 20px 0;
+            gap: 16px;
+            margin: 0 6px; /* 添加左右边距与recommend-list保持一致 */
+            scrollbar-width: none; /* 隐藏Firefox滚动条 */
+            -ms-overflow-style: none; /* 隐藏IE滚动条 */
+            min-height: 366px; /* 确保容器有足够高度 */
+        }
+        
+        .grocery-list::-webkit-scrollbar {
+            display: none; /* 隐藏Chrome滚动条 */
+        }
+        
+        .grocery-item {
+            width: 222px; /* 统一宽度与推荐项一致 */
+            min-width: 222px;
+            height: 366px; /* 统一高度与推荐项一致 */
+            border-radius: 16px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            padding: 0;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+            background-color: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        
+        .grocery-item-image {
+            width: 100%;
+            height: 222px;
+            border-radius: 0;
+            object-fit: cover;
+            margin-right: 0;
+            margin-bottom: 0;
+            filter: brightness(1.05) saturate(0.95); /* 增加亮度5%，降低饱和度5% */
+        }
+        
+        .grocery-item-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            padding: 12px 16px;
+        }
+        
+        .grocery-item-name {
+            font-size: 28px;
+            color: #333333;
+            line-height: 36px;
+            height: 72px; /* 修改为两行高度 */
+            overflow: hidden;
+            font-weight: 500;
+            white-space: normal; /* 允许换行 */
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* 限制为最多两行 */
+            -webkit-box-orient: vertical;
+        }
+        
+        .grocery-item-price {
+            font-size: 32px;
+            color: #FF3F22;
+            font-weight: 600;
+            margin-top: 4px; /* 调整与商品名称的距离 */
+        }
+        
+        .grocery-item-original {
+            font-size: 24px;
+            color: #C2C2C2;
+            text-decoration: line-through;
+            margin-left: 8px;
+        }
+        
+        .grocery-add-button {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            width: 52px;
+            height: 52px;
+            border-radius: 26px;
+            background: linear-gradient(90deg, #343B45 0%, #272727 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: none;
+        }
+        
+        .grocery-add-button-text {
+            font-size: 32px;
+            font-weight: bold;
+            color: #FFFFFF;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #FFFFFF;
+            padding: 20px 40px;
+            border-radius: 30px;
+            font-size: 32px;
+            display: none;
+            z-index: 10;
+        }
+        
+        /* 底部结算栏样式 */
+        .checkout-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 750px;
+            height: 140px;
+            background-color: #FFFFFF;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 32px;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+        }
+        
+        /* 继续逛按钮 */
+        .continue-button {
+            width: 335px;
+            height: 80px;
+            background-color: #F5F5F5;
+            border-radius: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .continue-button:hover {
+            background-color: #ECECEC;
+        }
+        
+        .continue-button-text {
+            font-size: 30px;
+            font-weight: 500;
+            color: #191919;
+        }
+        
+        /* 结算按钮 */
+        .checkout-button {
+            width: 335px;
+            height: 80px;
+            background: linear-gradient(90deg, #343B45 0%, #272727 100%);
+            border-radius: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            box-shadow: none;
+        }
+        
+        .checkout-button:hover {
+            transform: scale(1.02);
+        }
+        
+        .checkout-button-text {
+            font-size: 30px;
+            font-weight: 500;
+            color: #FFFFFF;
+        }
+        
+        .home-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 268px;
+            height: 10px;
+            background-color: #000000;
+            border-radius: 6px;
+            opacity: 0.3;
+        }
+        
+        /* 所需食材模块样式 */
+        .ingredients-section .section-title {
+            position: relative;
+            padding-left: 22px;
+        }
+        
+        .ingredient-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 28px;
+            padding-bottom: 0;
+            border-bottom: none;
+            position: relative;
+        }
+        
+        .ingredient-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .ingredient-name-container {
+            display: flex;
+            align-items: center;
+        }
+        
+        .ingredient-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            overflow: hidden;
+            margin-right: 16px;
+            background-color: #F8F8F8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .ingredient-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .ingredient-name {
+            font-size: 32px;
+            color: #333333;
+            font-weight: 500;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .has-tag {
+            display: inline-block;
+            margin-left: 10px;
+            background-color: #EEFCF6;
+            color: #01937C;
+            font-size: 22px;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-weight: normal;
+        }
+        
+        .not-enough-tag {
+            display: inline-block;
+            margin-left: 10px;
+            background-color: #EEF6FC;
+            color: #0166C8;
+            font-size: 22px;
+            padding: 2px 10px;
+            border-radius: 6px;
+            font-weight: normal;
+        }
+        
+        .ingredient-amount {
+            font-size: 32px;
+            color: #333333;
+            text-align: right;
+        }
+        
+        .ingredient-divider {
+            flex: 1;
+            height: 1px;
+            margin: 0 16px;
+            border-bottom: 2px dotted #ECECEC;
+        }
+        
+        /* 添加底部填充，防止内容被结算栏遮挡 */
+        .white-space-filler {
+            height: 140px;
+            width: 100%;
+        }
+        
+        /* 测试按钮样式 */
+        .test-button {
+            position: fixed;
+            bottom: 200px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+            font-size: 12px;
+            cursor: pointer;
+            display: none; /* 默认隐藏 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部导航 -->
+        <div class="header">
+            <div class="back-button" id="back-button">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M15 18L9 12L15 6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="header-title">食材选购</div>
+            <div class="header-buttons">
+                <div class="cart-button" id="cart-button">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 8H22L20 16H10L8 8Z" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+                        <path d="M11 20C11.5523 20 12 19.5523 12 19C12 18.4477 11.5523 18 11 18C10.4477 18 10 18.4477 10 19C10 19.5523 10.4477 20 11 20Z" fill="#FFFFFF"/>
+                        <path d="M19 20C19.5523 20 20 19.5523 20 19C20 18.4477 19.5523 18 19 18C18.4477 18 18 18.4477 18 19C18 19.5523 18.4477 20 19 20Z" fill="#FFFFFF"/>
+                    </svg>
+                    <div class="cart-badge" id="cart-badge">
+                        <div class="cart-badge-text" id="cart-badge-count">0</div>
+                    </div>
+                </div>
+                <div class="share-button" id="share-button">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 5.12548 15.0077 5.24917 15.0227 5.37061L8.08639 9.20068C7.55372 8.46976 6.82446 8 6 8C4.34315 8 3 9.34315 3 11C3 12.6569 4.34315 14 6 14C6.82446 14 7.55372 13.5302 8.08639 12.7993L15.0227 16.6294C15.0077 16.7508 15 16.8745 15 17C15 18.6569 16.3431 20 18 20C19.6569 20 21 18.6569 21 17C21 15.3431 19.6569 14 18 14C17.1755 14 16.4463 14.4698 15.9136 15.2007L8.97733 11.3706C8.99229 11.2492 9 11.1255 9 11C9 10.8745 8.99229 10.7508 8.97733 10.6294L15.9136 6.79932C16.4463 7.53024 17.1755 8 18 8Z" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div class="scroll-container">
+            <!-- 菜谱信息 -->
+            <div class="recipe-header">
+                <img src="" class="recipe-image" alt="菜谱图片">
+                <div class="recipe-info">
+                    <div class="recipe-name">加载中...</div>
+                    <div class="tag-container">
+                        <div class="tag-item">
+                            <div class="tag-text">家常菜</div>
+                        </div>
+                        <div class="tag-item">
+                            <div class="tag-text">快手菜</div>
+                        </div>
+                        <div class="tag-item">
+                            <div class="tag-text">10-30分钟</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 所需食材 -->
+            <div class="ingredients-section" id="ingredients-section">
+                <div class="section-header">
+                    <div class="section-title">所需食材</div>
+                    <div class="view-more" id="view-more-ingredients">
+                        查看更多
+                        <svg class="view-more-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12L10 8L6 4" stroke="#999999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div id="ingredients-list">
+                <!-- 食材列表将通过JavaScript动态生成 -->
+                </div>
+            </div>
+        
+            <!-- 组合购买 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">组合购买</div>
+                    <div class="view-more" id="view-more-combo">
+                        查看更多
+                        <svg class="view-more-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12L10 8L6 4" stroke="#999999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="section-subtitle">一次购齐所有制作该菜谱所需的食材</div>
+                
+                <div class="combo-container">
+                    <div class="combo-cards" id="combo-cards">
+                        <!-- 食材卡片将通过JavaScript动态生成 -->
+                    </div>
+            
+                    <!-- 底部价格和加购按钮 -->
+                    <div class="combo-footer">
+                        <div class="combo-price">
+                            <div class="combo-price-top">
+                                <div class="combo-price-label">组合购买价</div>
+                                <div class="combo-price-value" id="combo-price">¥20.0</div>
+                            </div>
+                            <div class="combo-price-original" id="original-price">¥50</div>
+                        </div>
+                        
+                        <div class="add-cart-button" id="add-combo-button">
+                            <div class="add-cart-button-text" id="add-combo-text">一键加车(2)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 更多推荐 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">更多选择</div>
+                    <div class="view-more" id="view-more-recommend">
+                        查看更多
+                        <svg class="view-more-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12L10 8L6 4" stroke="#999999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="section-subtitle">根据您的喜好，为您推荐以下食材</div>
+                
+                <div class="recommend-list" id="recommend-list">
+                    <!-- 推荐商品将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <!-- 低价囤货 -->
+            <div class="section">
+                <div class="section-header">
+                    <div class="section-title">低价囤货</div>
+                    <div class="view-more" id="view-more-grocery">
+                        查看更多
+                        <svg class="view-more-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 12L10 8L6 4" stroke="#999999" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="section-subtitle">精选低价生活必需品</div>
+                
+                <div class="grocery-list" id="grocery-list">
+                    <!-- 低价商品将通过JavaScript动态生成 -->
+                </div>
+            </div>
+            
+            <!-- 底部空间 -->
+            <div class="white-space-filler"></div>
+        </div>
+        
+        <!-- 测试按钮 -->
+        <div class="test-button" id="test-button">设置测试图片</div>
+        
+        <!-- 加购提示 -->
+        <div class="toast" id="toast">已加入购物车</div>
+        
+        <!-- 底部结算栏 -->
+        <div class="checkout-bar">
+            <div class="continue-button" id="continue-button">
+                <div class="continue-button-text">继续逛</div>
+            </div>
+            <div class="checkout-button" id="checkout-button">
+                <div class="checkout-button-text">去购物车结算</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 使用一个全局变量存储当前加载的菜谱，便于调试
+        let currentRecipe = null;
+        
+        // 确保DOM完全加载后再执行初始化逻辑
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+        
+        // 主初始化函数
+        function initializeApp() {
+            console.log('页面初始化开始...');
+            
+            // 添加测试数据到localStorage（如果为空）
+            if (!localStorage.getItem('selectedRecipe')) {
+                const testRecipe = {
+                    name: '芦笋炒虾仁',
+                    image: 'https://s1.st.meishij.net/rs/41/203/8103541/n8103541_152409408242609.jpg',
+                    ingredients: [
+                        { name: '芦笋', image: 'https://p0.meituan.net/ingee/16fbaf5beb40257d11e353681d00383e298604.png', has: false, notEnough: false },
+                        { name: '虾仁', image: 'https://p0.meituan.net/ingee/14da6e666061abb671de7828a373a8bd313755.png', has: false, notEnough: false },
+                        { name: '蒜米', image: 'https://p0.meituan.net/ingee/ca5e14e0ba49e2ec15a2c14ab56e77b2306129.png', has: true, notEnough: false }
+                    ]
+                };
+                localStorage.setItem('selectedRecipe', JSON.stringify(testRecipe));
+                localStorage.setItem('selectedRecipeImage', testRecipe.image);
+                console.log('已添加测试数据到localStorage');
+            }
+            
+            // 添加通用的图片错误处理函数
+            window.handleImgError = function(img, fallbackText) {
+                // 检查父元素是否有overlay类
+                const isInOverlay = img.parentNode && img.parentNode.classList.contains('image-overlay');
+                
+                // 将图片隐藏
+                img.style.display = 'none';
+                
+                // 如果是在overlay容器内，则在容器中添加错误状态
+                if (isInOverlay) {
+                    // 检查是否已经存在error-placeholder，如果存在则不重复创建
+                    if (!img.parentNode.querySelector('.error-placeholder')) {
+                        const errorPlaceholder = document.createElement('div');
+                        errorPlaceholder.className = 'error-placeholder';
+                        errorPlaceholder.style.width = '100%';
+                        errorPlaceholder.style.height = '100%';
+                        errorPlaceholder.style.backgroundColor = '#f5f5f5';
+                        errorPlaceholder.style.display = 'flex';
+                        errorPlaceholder.style.justifyContent = 'center';
+                        errorPlaceholder.style.alignItems = 'center';
+                        errorPlaceholder.style.fontSize = '24px';
+                        errorPlaceholder.style.color = '#666';
+                        errorPlaceholder.style.textAlign = 'center';
+                        errorPlaceholder.style.padding = '0 12px';
+                        
+                        // 使用简短名称并换行
+                        const displayText = fallbackText || img.alt || '加载失败';
+                        errorPlaceholder.textContent = displayText.length > 4 ? 
+                            displayText.slice(0, 4) + '...' : displayText;
+                        
+                        img.parentNode.appendChild(errorPlaceholder);
+                    }
+                } else {
+                    // 如果不在overlay容器内，则添加一个span作为替代
+                    const span = document.createElement('span');
+                    span.style.fontSize = '24px';
+                    span.style.color = '#666';
+                    span.style.textAlign = 'center';
+                    span.style.width = '100%';
+                    span.style.display = 'flex';
+                    span.style.justifyContent = 'center';
+                    span.style.alignItems = 'center';
+                    span.style.height = '100%';
+                    span.style.backgroundColor = '#f5f5f5';
+                    span.textContent = fallbackText || img.alt || '加载失败';
+                    
+                    // 将span添加到图片的父元素中
+                    if (img.parentNode) {
+                        img.parentNode.appendChild(span);
+                    }
+                }
+            };
+            
+            // 显示localStorage中的数据，方便调试
+            console.log('==== localStorage中的数据 ====');
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    const value = localStorage.getItem(key);
+                    console.log(`${key}: ${value.substring(0, 100)}${value.length > 100 ? '...' : ''}`);
+                } catch (e) {
+                    console.log(`${key}: [无法读取]`);
+                }
+            }
+            console.log('============================');
+            
+            // 立即清除可能存在的默认图片，避免显示默认图片
+            const recipeImage = document.querySelector('.recipe-image');
+            if (recipeImage) {
+                recipeImage.style.display = 'none'; // 初始隐藏，待加载完成后再显示
+                recipeImage.src = ''; // 清空src，确保重新加载
+            }
+            
+            // 添加辅助函数 - 创建SVG Data URL (仅作为备用)
+            window.createRecipeSvgDataUrl = function(title) {
+                const bgColor = '#f0f0f0';
+                const textColor = '#333333';
+                const recipeTitle = title.length > 20 ? title.substring(0, 20) + '...' : title;
+                return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='718' height='348' viewBox='0 0 718 348'%3E%3Crect width='100%25' height='100%25' fill='${bgColor}'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='24' fill='${textColor}' text-anchor='middle' dominant-baseline='middle'%3E${recipeTitle}%3C/text%3E%3C/svg%3E`;
+            };
+            
+            // 添加强制加载菜谱图片的函数
+            window.forceLoadRecipeImage = function() {
+                console.log('强制加载菜谱图片...');
+                const recipeImage = document.querySelector('.recipe-image');
+                if (!recipeImage) {
+                    console.error('找不到菜谱图片元素');
+                    return;
+                }
+                
+                // 清除现有属性
+                recipeImage.style.display = 'none';
+                recipeImage.removeAttribute('src');
+                recipeImage.onerror = null;
+                recipeImage.onload = null;
+                
+                // 获取菜谱数据
+                const selectedRecipe = JSON.parse(localStorage.getItem('selectedRecipe') || '{}');
+                const savedImage = localStorage.getItem('selectedRecipeImage');
+                
+                // 确定图片URL
+                let imageUrl = '';
+                if (savedImage && savedImage.trim() !== '') {
+                    imageUrl = savedImage;
+                    console.log('使用localStorage中保存的图片:', imageUrl);
+                } else if (selectedRecipe.image && selectedRecipe.image.trim() !== '') {
+                    imageUrl = selectedRecipe.image;
+                    console.log('使用菜谱数据中的图片:', imageUrl);
+                    localStorage.setItem('selectedRecipeImage', imageUrl);
+                } else {
+                    imageUrl = 'https://s1.st.meishij.net/rs/41/203/8103541/n8103541_152409408242609.jpg';
+                    console.log('使用备用图片:', imageUrl);
+                }
+                
+                // 设置图片加载处理
+                recipeImage.onload = function() {
+                    console.log('菜谱图片加载成功:', imageUrl);
+                    recipeImage.style.display = 'block';
+                };
+                
+                recipeImage.onerror = function() {
+                    console.warn('菜谱图片加载失败，使用备用图片:', imageUrl);
+                    this.onerror = null;
+                    this.src = 'https://s1.st.meishij.net/rs/41/203/8103541/n8103541_152409408242609.jpg';
+                    this.style.display = 'block';
+                };
+                
+                // 设置图片源
+                recipeImage.src = imageUrl;
+                
+                // 添加备用计时器，确保不管怎样图片最终都会显示
+                setTimeout(function() {
+                    if (recipeImage.style.display === 'none') {
+                        console.warn('图片加载超时，强制显示');
+                        recipeImage.style.display = 'block';
+                        // 如果图片还是没有源，使用备用图片
+                        if (!recipeImage.src || recipeImage.src === '' || recipeImage.src === window.location.href) {
+                            recipeImage.src = 'https://s1.st.meishij.net/rs/41/203/8103541/n8103541_152409408242609.jpg';
+                        }
+                    }
+                }, 2000);
+            };
+            
+            // 初始化购物车角标
+            initCartBadge();
+            
+            // 加载菜谱数据
+            loadRecipeData();
+            
+            // 在加载菜谱数据后，强制加载菜谱图片
+            setTimeout(window.forceLoadRecipeImage, 500);
+            
+            // 初始化"查看更多"按钮事件
+            initViewMoreEvents();
+            
+            // 绑定购物车点击事件
+            const cartButton = document.getElementById('cart-button');
+            if (cartButton) {
+                cartButton.addEventListener('click', function() {
+                    // 打开购物车页面
+                    showToast('正在前往购物车...');
+                    // 这里可以添加跳转到购物车页面的逻辑
+                });
+            }
+            
+            // 绑定分享按钮点击事件
+            const shareButton = document.getElementById('share-button');
+            if (shareButton) {
+                shareButton.addEventListener('click', function() {
+                    showToast('分享功能即将上线');
+                    // 这里可以添加分享逻辑
+                });
+            }
+            
+            // 绑定结算按钮点击事件
+            const checkoutButton = document.getElementById('checkout-button');
+            if (checkoutButton) {
+                checkoutButton.addEventListener('click', function() {
+                    const cartCount = parseInt(localStorage.getItem('cartCount') || '0');
+                    if (cartCount > 0) {
+                        showToast('正在前往结算...');
+                        // 这里可以添加跳转到结算页面的逻辑
+                    } else {
+                        showToast('购物车为空，请先添加商品');
+                    }
+                });
+            }
+            
+            // 绑定继续逛按钮点击事件
+            const continueButton = document.getElementById('continue-button');
+            if (continueButton) {
+                continueButton.addEventListener('click', function() {
+                    // 返回到recipe-final页面
+                    window.location.href = 'recipe-final.html';
+                });
+            }
+            
+            // 绑定测试按钮点击事件
+            const testButton = document.getElementById('test-button');
+            if (testButton) {
+                // 在开发环境中显示测试按钮
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname === '::1') {
+                    testButton.style.display = 'block';
+                }
+                
+                testButton.addEventListener('click', function() {
+                    // 选择随机操作：1. 设置测试图片 2. 强制加载图片
+                    const operation = Math.random() > 0.5 ? 'set' : 'load';
+                    
+                    if (operation === 'set') {
+                        // 设置测试图片
+                        const testImages = [
+                            'https://s1.st.meishij.net/rs/41/203/8103541/n8103541_152409408242609.jpg',
+                            'https://st-cn.meishij.net/rs/208/203/4807708/n4807708_147638304334989.jpg',
+                            'https://st-cn.meishij.net/rs/208/203/113708/n113708_154604993715532.jpg',
+                            'https://st-cn.meishij.net/rs/41/203/8193541/n8193541_152603718437689.jpg'
+                        ];
+                        
+                        // 随机选择一张图片
+                        const randomImage = testImages[Math.floor(Math.random() * testImages.length)];
+                        
+                        // 保存到localStorage
+                        localStorage.setItem('selectedRecipeImage', randomImage);
+                        
+                        // 更新显示
+                        const selectedRecipe = JSON.parse(localStorage.getItem('selectedRecipe') || '{}');
+                        selectedRecipe.image = randomImage;
+                        localStorage.setItem('selectedRecipe', JSON.stringify(selectedRecipe));
+                        
+                        showToast('已设置新测试图片');
+                    } else {
+                        // 强制加载图片
+                        window.forceLoadRecipeImage();
+                        showToast('已强制重新加载图片');
+                    }
+                });
+            }
+            
+            // 添加元素状态检查
+            checkElementsStatus();
+            
+            // 强制刷新布局
+            setTimeout(forceLayoutRefresh, 300);
+            
+            console.log('页面初始化完成');
+        }
+        
+        // 返回按钮事件
+        document.getElementById('back-button').addEventListener('click', function() {
+            window.location.href = 'recipe-final.html';
+        });
+        
+        // 初始化购物车角标
+        function initCartBadge() {
+            // 获取当前购物车数量
+            const cartCount = parseInt(localStorage.getItem('cartCount') || '0');
+            
+            // 更新所有显示购物车数量的元素
+            updateCartCount(cartCount);
+        }
+        
+        // 更新购物车数量
+        function updateCartCount(count) {
+            // 保存到本地存储
+            localStorage.setItem('cartCount', count.toString());
+            
+            // 更新购物车角标
+            const cartBadge = document.getElementById('cart-badge');
+            const cartBadgeCount = document.getElementById('cart-badge-count');
+            
+            if (cartBadge && cartBadgeCount) {
+                if (count > 0) {
+                    // 有商品时显示角标
+                    cartBadge.style.display = 'flex';
+                    cartBadgeCount.textContent = count > 99 ? '99+' : count.toString();
+                } else {
+                    // 无商品时隐藏角标
+                    cartBadge.style.display = 'none';
+                }
+            }
+            
+            // 更新结算按钮状态
+            const checkoutButton = document.getElementById('checkout-button');
+            if (checkoutButton) {
+                if (count > 0) {
+                    checkoutButton.style.opacity = '1';
+                    checkoutButton.style.cursor = 'pointer';
+                } else {
+                    checkoutButton.style.opacity = '0.6';
+                    checkoutButton.style.cursor = 'not-allowed';
+                }
+            }
+        }
+        
+        // 监听加入购物车事件
+        function addToCart(item) {
+            // 获取当前购物车数量
+            const currentCount = parseInt(localStorage.getItem('cartCount') || '0');
+            // 更新购物车数量
+            updateCartCount(currentCount + 1);
+            // 显示提示
+            showToast('已加入购物车');
+        }
+        
+        // 从localStorage加载菜谱数据
+        function loadRecipeData() {
+            // 获取localStorage中的已选择菜谱
+            const selectedRecipe = JSON.parse(localStorage.getItem('selectedRecipe') || '{}');
+            currentRecipe = selectedRecipe; // 保存到全局变量
+            
+            console.log('从localStorage加载的菜谱数据:', selectedRecipe);
+            
+            // 获取菜谱名称
+            const recipeName = selectedRecipe.name || selectedRecipe.title || '美味菜谱';
+            
+            // 设置菜谱名称
+            document.querySelector('.recipe-name').textContent = recipeName;
+            
+            // 设置页面标题
+            document.title = `食材选购 - ${recipeName}`;
+            
+            // 设置头部标题
+            const headerTitle = document.querySelector('.header-title');
+            if (headerTitle) {
+                headerTitle.textContent = recipeName;
+            }
+            
+            // 直接调用强制加载图片函数，确保图片正确显示
+            window.forceLoadRecipeImage();
+            
+            // 初始化食材模块
+            initIngredients();
+            
+            // 初始化推荐列表
+            initRecommendations();
+            
+            // 初始化低价囤货
+            initGroceries();
+        }
+        
+        // 初始化食材模块 - 添加缺失的函数
+        function initIngredients() {
+            console.log('初始化食材模块');
+            
+            // 获取当前菜谱数据
+            const recipe = currentRecipe || {};
+            
+            // 不管有没有菜谱数据，都创建默认食材数据
+            const defaultIngredients = [
+                { name: '芦笋', image: 'https://p0.meituan.net/ingee/16fbaf5beb40257d11e353681d00383e298604.png', has: false, notEnough: false },
+                { name: '虾仁', image: 'https://p0.meituan.net/ingee/14da6e666061abb671de7828a373a8bd313755.png', has: false, notEnough: false },
+                { name: '蒜米', image: 'https://p0.meituan.net/ingee/ca5e14e0ba49e2ec15a2c14ab56e77b2306129.png', has: true, notEnough: false }
+            ];
+            
+            // 如果菜谱中有食材信息，就使用菜谱中的，否则使用默认的
+            const ingredients = (recipe && recipe.ingredients) ? recipe.ingredients : defaultIngredients;
+            
+            console.log('使用的食材数据:', ingredients);
+            
+            // 初始化食材列表
+            initIngredientsList(ingredients);
+            
+            // 初始化组合购买模块
+            initComboPurchase(ingredients);
+        }
+        
+        // 更新菜谱显示
+        function updateRecipeDisplay(recipe) {
+            if (!recipe) {
+                console.error('未提供有效的菜谱数据');
+                return;
+            }
+            
+            console.log('更新菜谱显示:', recipe.title, recipe.image);
+            
+            // 更新菜谱名称
+            document.querySelector('.recipe-name').textContent = recipe.title || '未知菜谱';
+            
+            // 获取图片元素
+            const recipeImage = document.querySelector('.recipe-image');
+            if (!recipeImage) {
+                console.error('未找到菜谱图片元素');
+                return;
+            }
+            
+            // 清空src，确保重新加载
+            recipeImage.removeAttribute('src');
+            recipeImage.removeAttribute('onerror');
+            
+            // 确保图片显示
+            recipeImage.style.display = '';
+            
+            // 获取菜谱图片URL
+            let imageUrl = '';
+            
+            // 优先使用recipe对象中的image属性
+            if (recipe.image) {
+                imageUrl = recipe.image;
+                console.log('使用recipe.image:', imageUrl);
+            } else {
+                // 尝试从localStorage获取
+                const storedImage = localStorage.getItem('selectedRecipeImage');
+                if (storedImage) {
+                    imageUrl = storedImage;
+                    console.log('使用localStorage中的图片:', imageUrl);
+                } else {
+                    // 使用默认图片
+                    imageUrl = 'https://p0.meituan.net/ingee/a7608979aba4a879b021871e803f9de32724.png';
+                    console.log('使用默认图片:', imageUrl);
+                }
+            }
+            
+            // 设置错误处理
+            recipeImage.onerror = function() {
+                console.error('菜谱图片加载失败:', imageUrl);
+                this.onerror = null;
+                // 使用备用方案
+                tryLoadFallbackImages(this, recipe);
+            };
+            
+            // 设置图片加载成功的处理
+            recipeImage.onload = function() {
+                console.log('菜谱图片加载成功:', imageUrl);
+                // 显示图片
+                this.style.display = '';
+            };
+            
+            // 设置图片路径
+            console.log('设置菜谱图片:', imageUrl);
+            recipeImage.src = imageUrl;
+            
+            // 更新标签
+            const tagContainer = document.querySelector('.tag-container');
+            if (!tagContainer) {
+                console.warn('未找到标签容器');
+                return;
+            }
+            
+            tagContainer.innerHTML = '';
+            
+            // 添加默认标签
+            const defaultTags = ['家常菜', '快手菜', '10-30分钟'];
+            defaultTags.forEach(tag => {
+                const tagItem = document.createElement('div');
+                tagItem.className = 'tag-item';
+                tagItem.innerHTML = `<div class="tag-text">${tag}</div>`;
+                tagContainer.appendChild(tagItem);
+            });
+        }
+        
+        // 尝试加载备用图片的辅助函数
+        function tryLoadFallbackImages(imgElement, recipe) {
+            if (!imgElement) return;
+            
+            console.log('尝试加载备用图片，recipe:', recipe);
+            
+            // 获取备用图片数组
+            const fallbackImages = [];
+            
+            // 1. 尝试使用recipe对象中的fallbackImages
+            if (recipe.fallbackImages && Array.isArray(recipe.fallbackImages)) {
+                fallbackImages.push(...recipe.fallbackImages);
+            }
+            
+            // 2. 尝试使用recipe对象中的fallbackImage
+            if (recipe.fallbackImage && !fallbackImages.includes(recipe.fallbackImage)) {
+                fallbackImages.push(recipe.fallbackImage);
+            }
+            
+            // 3. 尝试从localStorage获取菜谱图片
+            const storedRecipeImage = localStorage.getItem('selectedRecipeImage');
+            if (storedRecipeImage && !fallbackImages.includes(storedRecipeImage)) {
+                fallbackImages.push(storedRecipeImage);
+            }
+            
+            // 4. 添加默认图片
+            if (!fallbackImages.includes('https://p0.meituan.net/ingee/a7608979aba4a879b021871e803f9de32724.png')) {
+                fallbackImages.push('https://p0.meituan.net/ingee/a7608979aba4a879b021871e803f9de32724.png');
+            }
+            
+            // 5. 添加SVG数据URL作为最后的备用
+            fallbackImages.push(window.createRecipeSvgDataUrl(recipe.title || '未知菜谱'));
+            
+            console.log('备用图片列表:', fallbackImages);
+            
+            // 尝试加载第一个备用图片
+            loadFallbackImageSequentially(imgElement, fallbackImages, 0);
+        }
+        
+        // 按顺序尝试加载备用图片
+        function loadFallbackImageSequentially(imgElement, imageArray, index) {
+            if (!imgElement || !imageArray || index >= imageArray.length) {
+                // 如果没有更多备用图片，使用最终的备用方案（纯色背景）
+                imgElement.style.backgroundColor = '#f0f0f0';
+                imgElement.style.display = 'flex';
+                imgElement.style.justifyContent = 'center';
+                imgElement.style.alignItems = 'center';
+                imgElement.innerText = imgElement.alt || '图片加载失败';
+                return;
+            }
+            
+            // 记录当前尝试加载的图片
+            console.log(`尝试加载备用图片 ${index + 1}/${imageArray.length}:`, imageArray[index]);
+            
+            // 设置新的错误处理函数，如果当前备用图片加载失败，则尝试下一个
+            imgElement.onerror = function() {
+                console.error(`备用图片 ${index + 1} 加载失败:`, imageArray[index]);
+                this.onerror = null;
+                // 尝试下一个备用图片
+                loadFallbackImageSequentially(imgElement, imageArray, index + 1);
+            };
+            
+            // 设置图片加载成功的处理
+            imgElement.onload = function() {
+                console.log(`备用图片 ${index + 1} 加载成功:`, imageArray[index]);
+                this.style.display = '';
+            };
+            
+            // 设置当前备用图片
+            imgElement.src = imageArray[index];
+        }
+        
+        // 初始化所需食材列表
+        function initIngredientsList(ingredients) {
+            const ingredientsList = document.getElementById('ingredients-list');
+            ingredientsList.innerHTML = ''; // 清空列表，防止重复添加
+            
+            // 定义食材单位映射表
+            const ingredientUnitMap = {
+                '大蒜': '适量',
+                '蒜米': '适量',
+                '蒜蓉': '适量',
+                '葱': '适量',
+                '姜': '适量',
+                '葱姜蒜': '适量',
+                '葱姜': '适量',
+                '盐': '适量',
+                '胡椒': '适量',
+                '料酒': '适量',
+                '酱油': '适量',
+                '食用油': '适量',
+                '洋葱': '1个',
+                '玉米': '1个',
+                '西红柿': '2个',
+                '番茄': '2个',
+                '土豆': '2个',
+                '鸡蛋': '2个',
+                '青椒': '2个',
+                '红椒': '1个'
+            };
+            
+            // 随机生成重量的函数
+            function getRandomWeight() {
+                // 生成200-400之间的随机数，并取整到10的倍数
+                const weight = Math.floor(Math.random() * 21) * 10 + 200;
+                return `${weight}g`;
+            }
+            
+            ingredients.forEach(ingredient => {
+                const ingredientRow = document.createElement('div');
+                ingredientRow.className = 'ingredient-row';
+                
+                // 确定标签类型：已有、不够或无标签
+                let statusTag = '';
+                if (ingredient.has) {
+                    statusTag = `<span class="has-tag">已有</span>`;
+                } else if (ingredient.notEnough) {
+                    statusTag = `<span class="not-enough-tag">不够</span>`;
+                }
+                
+                // 确定食材单位
+                let amount = ingredientUnitMap[ingredient.name] || getRandomWeight();
+                
+                ingredientRow.innerHTML = `
+                    <div class="ingredient-name-container">
+                        <div class="ingredient-icon">
+                            <img src="${ingredient.image}" alt="${ingredient.name}" onerror="this.onerror=null; this.src='https://p0.meituan.net/ingee/a7608979aba4a879b021871e803f9de32724.png';">
+                        </div>
+                        <div class="ingredient-name">${ingredient.name} ${statusTag}</div>
+                    </div>
+                    <div class="ingredient-divider"></div>
+                    <div class="ingredient-amount">${amount}</div>
+                `;
+                
+                ingredientsList.appendChild(ingredientRow);
+            });
+        }
+        
+        // 初始化组合购买模块
+        function initComboPurchase(ingredients) {
+            const comboCards = document.getElementById('combo-cards');
+            comboCards.innerHTML = ''; // 清空卡片，防止重复添加
+            
+            // 常见食材的默认价格映射
+            const priceMap = {
+                '虾仁': 12.8,
+                '芦笋': 9.9,
+                '葱': 4.9,
+                '姜': 5.5,
+                '蒜': 4.5,
+                '大蒜': 4.5,
+                '蒜米': 5.8,
+                '蒜蓉': 6.8,
+                '青椒': 7.8,
+                '红椒': 8.8,
+                '鸡蛋': 10.8,
+                '西红柿': 6.8,
+                '番茄': 6.8,
+                '土豆': 5.8,
+                '蘑菇': 11.8,
+                '香菇': 14.8,
+                '金针菇': 8.8,
+                '杏鲍菇': 9.8
+            };
+            
+            // 首先，为所有食材设置价格
+            const ingredientsWithPrice = ingredients.map(ing => {
+                // 如果已经有价格则保留
+                if (typeof ing.price === 'number' && !isNaN(ing.price)) {
+                    return ing;
+                }
+                
+                // 设置价格
+                let price = priceMap[ing.name] || parseFloat((Math.random() * 10 + 8).toFixed(1));
+                let originalPrice = parseFloat((price * 1.2).toFixed(1));
+                
+                return {...ing, price, originalPrice};
+            });
+            
+            // 过滤需要购买的食材（不包括已有的，但包括"不够"的食材）
+            const needToBuyIngredients = ingredientsWithPrice.filter(ing => !ing.has || ing.notEnough);
+            
+            // 所有食材都需要展示，包括"已有"的
+            const allIngredientsToShow = [...ingredientsWithPrice];
+            
+            // 常用的调味辅材列表
+            const commonCondiments = [
+                { 
+                    name: '盐', 
+                    richName: '海天优质加碘食盐400g',
+                    image: 'https://p0.meituan.net/ingee/fdfa96ad910aaf71eab6aa9181ce170116873.png',
+                    price: 5.8,
+                    originalPrice: 7.0
+                },
+                { 
+                    name: '料酒', 
+                    richName: '李锦记料酒500ml',
+                    image: 'https://p0.meituan.net/ingee/99569bd922a8d4111c435c3444b5882840815.png',
+                    price: 12.9,
+                    originalPrice: 15.5
+                },
+                { 
+                    name: '酱油', 
+                    richName: '海天金标生抽500ml',
+                    image: 'https://p0.meituan.net/ingee/99df6d5f68221fe1982e92138b034a7b41361.png',
+                    price: 8.5,
+                    originalPrice: 10.2
+                },
+                {
+                    name: '食用油',
+                    richName: '金龙鱼特级花生油900ml',
+                    image: 'https://p0.meituan.net/ingee/83d32bc7f4fca5db1ead552fa2d1f28941517.png',
+                    price: 29.9,
+                    originalPrice: 35.9
+                },
+                {
+                    name: '醋',
+                    richName: '镇江香醋500ml',
+                    image: 'https://p0.meituan.net/ingee/77fa73c94ecde027adf33599e8ed915042316.png',
+                    price: 9.9,
+                    originalPrice: 11.9
+                },
+                {
+                    name: '葱',
+                    richName: '新鲜青葱200g',
+                    image: 'https://p0.meituan.net/ingee/cb675f718b5f8fdcfef72a8a5e9aec6238541.png',
+                    price: 4.9,
+                    originalPrice: 5.9
+                },
+                {
+                    name: '姜',
+                    richName: '黄姜鲜姜300g',
+                    image: 'https://p0.meituan.net/ingee/b27e58c1f4e52642d3dbc5faef1c931338216.png',
+                    price: 5.5,
+                    originalPrice: 7.8
+                },
+                {
+                    name: '蒜',
+                    richName: '新鲜大蒜头250g',
+                    image: 'https://p0.meituan.net/ingee/0497bc5e64e63dd76320dea35b8f8f12315905.png',
+                    price: 4.5,
+                    originalPrice: 6.5
+                },
+                {
+                    name: '辣椒',
+                    richName: '朝天小米辣200g',
+                    image: 'https://p0.meituan.net/ingee/5f78d9aac777ddc1db890fa338a5fd0741882.png',
+                    price: 6.9,
+                    originalPrice: 8.9
+                }
+            ];
+            
+            // 食材名称丰富化映射表
+            const richIngredientNameMap = {
+                '芦笋': '高山有机鲜芦笋200g',
+                '虾仁': '新鲜海白虾仁300g',
+                '蒜米': '新鲜手剥蒜米150g',
+                '蒜蓉': '农家现磨蒜蓉100g',
+                '大蒜': '农家新鲜大蒜头300g',
+                '葱': '新鲜青葱200g',
+                '姜': '黄姜鲜姜300g',
+                '葱姜蒜': '葱姜蒜组合切段剥好各50g',
+                '葱姜': '葱姜组合切丝200g',
+                '青椒': '农家新鲜青椒300g',
+                '红椒': '有机红椒250g',
+                '鸡蛋': '散养农家鸡蛋10枚',
+                '西红柿': '有机西红柿400g',
+                '番茄': '新鲜番茄400g',
+                '土豆': '黄心土豆500g',
+                '蘑菇': '有机鲜蘑菇250g',
+                '香菇': '精选干香菇100g',
+                '金针菇': '本地鲜金针菇200g',
+                '杏鲍菇': '新鲜杏鲍菇300g',
+                '豆腐': '石磨嫩豆腐400g',
+                '豆芽': '鲜黄豆芽300g',
+                '豆角': '农家鲜豆角350g',
+                '黄瓜': '有机黄瓜400g',
+                '白菜': '新鲜大白菜500g',
+                '菠菜': '有机菠菜300g',
+                '韭菜': '新鲜韭菜200g',
+                '茄子': '紫皮茄子400g',
+                '花菜': '新鲜花菜450g',
+                '莴笋': '脆皮莴笋350g',
+                '甜椒': '彩色甜椒混合300g'
+            };
+            
+            // 确保展示3个食材卡片
+            let itemsToDisplay = [];
+            
+            // 首先添加所有原始食材
+            itemsToDisplay = [...allIngredientsToShow];
+            
+            // 如果不足3个，添加调味辅材
+            while (itemsToDisplay.length < 3) {
+                // 挑选尚未添加的调味辅材
+                const existingNames = itemsToDisplay.map(item => item.name);
+                const availableCondiments = commonCondiments.filter(c => !existingNames.includes(c.name));
+                
+                if (availableCondiments.length > 0) {
+                    // 选择一个随机的调味辅材
+                    const randomIndex = Math.floor(Math.random() * availableCondiments.length);
+                    const condiment = availableCondiments[randomIndex];
+                    
+                    // 添加到显示列表和购买列表
+                    itemsToDisplay.push(condiment);
+                    
+                    // 如果不是"已有"状态，添加到需要购买的列表
+                    if (!condiment.has) {
+                        needToBuyIngredients.push(condiment);
+                    }
+                } else {
+                    // 没有更多可添加的调味辅材，跳出循环
+                    break;
+                }
+            }
+            
+            // 如果超过3个，只保留3个
+            if (itemsToDisplay.length > 3) {
+                // 确保优先保留"不够"的食材
+                const notEnoughItems = itemsToDisplay.filter(item => item.notEnough);
+                const otherItems = itemsToDisplay.filter(item => !item.notEnough);
+                
+                // 按照"不够"、"需要购买"和"已有"的优先级排序
+                const sortedItems = [
+                    ...notEnoughItems,
+                    ...otherItems.filter(item => !item.has),
+                    ...otherItems.filter(item => item.has)
+                ];
+                
+                // 只保留前3个
+                itemsToDisplay = sortedItems.slice(0, 3);
+            }
+            
+            // 为每个食材设置价格
+            itemsToDisplay = itemsToDisplay.map(item => {
+                // 如果已经有价格的保持不变
+                if (typeof item.price === 'number' && !isNaN(item.price)) {
+                    return item;
+                }
+                
+                // 根据食材名称设置默认价格
+                let price = 9.9; // 默认价格
+                let originalPrice = 12.9;
+                
+                // 如果在价格映射表中有对应价格，则使用映射的价格
+                if (priceMap[item.name]) {
+                    price = priceMap[item.name];
+                } else {
+                    // 否则生成随机价格
+                    price = parseFloat((Math.random() * 10 + 8).toFixed(1));
+                }
+                
+                // 原价是价格的1.2倍
+                originalPrice = parseFloat((price * 1.2).toFixed(1));
+                
+                return {...item, price, originalPrice};
+            });
+            
+            // 创建食材卡片，只显示选定的3个食材
+            itemsToDisplay.forEach((ingredient, index) => {
+                const comboCard = document.createElement('div');
+                comboCard.className = 'combo-card';
+                
+                // 确保有图像URL，如果没有使用兜底图
+                const ingredientImageUrl = ingredient.image || 'https://p0.meituan.net/ingee/a7608979aba4a879b021871e803f9de32724.png';
+                
+                // 获取丰富的食材名称
+                const richName = ingredient.richName || richIngredientNameMap[ingredient.name] || `优质${ingredient.name}`;
+                
+                // 使用设定的价格
+                const currentPrice = ingredient.price.toFixed(1);
+                const originalPrice = ingredient.originalPrice.toFixed(1);
+                
+                // 添加标签
+                let statusTag = '';
+                if (ingredient.has) {
+                    statusTag = `<div class="has-tag-overlay">已有</div>`;
+                } else if (ingredient.notEnough) {
+                    statusTag = `<div class="combo-card-tag">不够</div>`;
+                }
+                
+                // 构建HTML，使用真实图片，添加图片蒙层
+                comboCard.innerHTML = `
+                    <div class="image-overlay">
+                        <img 
+                            src="${ingredientImageUrl}" 
+                            alt="${ingredient.name}" 
+                            class="combo-card-image"
+                            onerror="handleImgError(this, '${ingredient.name}')"
+                        >
+                        ${statusTag}
+                    </div>
+                    <div class="combo-card-name">${richName}</div>
+                    <div class="combo-card-price">¥${currentPrice}</div>
+                    <div class="combo-card-original">¥${originalPrice}</div>
+                    <div class="combo-card-add">
+                        <div class="combo-card-add-text">+</div>
+                    </div>
+                `;
+                
+                comboCards.appendChild(comboCard);
+                
+                // 添加点击事件
+                const addButton = comboCard.querySelector('.combo-card-add');
+                if (addButton) {
+                    addButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        addToCart(ingredient);
+                    });
+                }
+            });
+            
+            // 计算需要购买的食材总价 - 基于实际选中商品的价格总和
+            const totalPrice = needToBuyIngredients.reduce((sum, item) => {
+                // 确保价格是有效的数字
+                const itemPrice = typeof item.price === 'number' ? item.price : 
+                                 (parseFloat(item.price) || 0);
+                return sum + itemPrice;
+            }, 0);
+            
+            // 为了调试，输出每个需要购买的食材及其价格
+            console.log('需要购买的食材列表:');
+            needToBuyIngredients.forEach(item => {
+                console.log(`${item.name || '未知食材'}: ¥${item.price}`);
+            });
+            console.log(`组合购买总价: ¥${totalPrice.toFixed(1)}`);
+            
+            // 原价比总价高20%
+            const originalPrice = totalPrice * 1.2;
+            
+            // 更新组合购买按钮文本
+            document.getElementById('add-combo-text').textContent = `一键加车(${needToBuyIngredients.length})`;
+            document.getElementById('combo-price').textContent = `¥${totalPrice.toFixed(1)}`;
+            document.getElementById('original-price').textContent = `¥${originalPrice.toFixed(1)}`;
+            
+            // 为一键加车按钮添加点击事件
+            const addComboButton = document.getElementById('add-combo-button');
+            if (addComboButton) {
+                addComboButton.addEventListener('click', function() {
+                    // 获取当前购物车数量
+                    const currentCount = parseInt(localStorage.getItem('cartCount') || '0');
+                    // 只计算需要购买的食材数量
+                    const itemsToAddCount = needToBuyIngredients.length;
+                    // 更新购物车数量
+                    updateCartCount(currentCount + itemsToAddCount);
+                    // 显示提示
+                    showToast('已加入购物车');
+                });
+            }
+        }
+        
+        // 初始化推荐食材
+        function initRecommendations() {
+            console.log('开始初始化更多选择模块');
+            const recommendList = document.getElementById('recommend-list');
+            
+            if (!recommendList) {
+                console.error('找不到更多选择容器元素(#recommend-list)');
+                return;
+            }
+            
+            // 调试输出父元素尺寸
+            console.log('更多选择容器尺寸:', 
+                '宽度=', recommendList.offsetWidth, 
+                '高度=', recommendList.offsetHeight,
+                '可见性=', getComputedStyle(recommendList).display,
+                '可见性2=', getComputedStyle(recommendList).visibility,
+                '父元素=', recommendList.parentElement.className);
+            
+            recommendList.innerHTML = ''; // 清空列表，防止重复添加
+            
+            // 更多选择食材数据 - 对应主材但与组合购买模块商品有所区分
+            const recommendations = [
+                { name: '有机新鲜芦笋 200g', image: 'https://p0.meituan.net/ingee/16fbaf5beb40257d11e353681d00383e298604.png', price: 13.8, originalPrice: 16.8 },
+                { name: '国产鲜虾仁 300g', image: 'https://p0.meituan.net/ingee/14da6e666061abb671de7828a373a8bd313755.png', price: 14.9, originalPrice: 17.9 },
+                { name: '泰国进口香米 5kg', image: 'https://p0.meituan.net/ingee/b27e58c1f4e52642d3dbc5faef1c931338216.png', price: 24.9, originalPrice: 29.9 },
+                { name: '有机栽培香菇 250g', image: 'https://p0.meituan.net/ingee/a7608979aba4a879b021871e803f9de32724.png', price: 16.8, originalPrice: 19.9 },
+                { name: '东北黑木耳 100g', image: 'https://p0.meituan.net/ingee/5f78d9aac777ddc1db890fa338a5fd0741882.png', price: 12.8, originalPrice: 15.8 },
+                { name: '鲜切生菜 300g', image: 'https://p0.meituan.net/ingee/cb675f718b5f8fdcfef72a8a5e9aec6238541.png', price: 8.9, originalPrice: 10.9 },
+                { name: '新鲜小番茄 350g', image: 'https://p0.meituan.net/ingee/2565b4cb8430afa18203b94532fd0051251806.png', price: 9.9, originalPrice: 12.9 },
+                { name: '山东黄瓜 400g', image: 'https://p0.meituan.net/ingee/77fa73c94ecde027adf33599e8ed915042316.png', price: 5.9, originalPrice: 7.9 },
+                { name: '有机生菜 200g', image: 'https://p0.meituan.net/ingee/cb675f718b5f8fdcfef72a8a5e9aec6238541.png', price: 6.9, originalPrice: 8.9 },
+                { name: '新鲜秋葵 250g', image: 'https://p0.meituan.net/ingee/5f78d9aac777ddc1db890fa338a5fd0741882.png', price: 11.9, originalPrice: 14.9 }
+            ];
+            
+            // 最多显示10个商品
+            const maxItems = Math.min(recommendations.length, 10);
+            
+            recommendations.slice(0, maxItems).forEach((item, index) => {
+                const recommendItem = document.createElement('div');
+                recommendItem.className = 'recommend-item';
+                recommendItem.setAttribute('data-index', index); // 添加索引属性，方便调试
+                
+                recommendItem.innerHTML = `
+                    <div class="image-overlay">
+                        <img 
+                            src="${item.image}" 
+                            alt="${item.name}" 
+                            class="recommend-item-image"
+                            onerror="handleImgError(this, '${item.name}')"
+                        >
+                    </div>
+                    <div class="recommend-item-name">${item.name}</div>
+                    <div class="recommend-item-price">¥${item.price.toFixed(1)}</div>
+                    <div class="recommend-item-original">¥${item.originalPrice.toFixed(1)}</div>
+                    <div class="recommend-add-button">
+                        <div class="recommend-add-button-text">+</div>
+                    </div>
+                `;
+                
+                recommendList.appendChild(recommendItem);
+                
+                // 添加点击事件
+                const addButton = recommendItem.querySelector('.recommend-add-button');
+                if (addButton) {
+                    addButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        addToCart(item);
+                    });
+                }
+            });
+            
+            // 添加"查看更多"点击事件
+            const viewMoreRecommend = document.getElementById('view-more-recommend');
+            if (viewMoreRecommend) {
+                viewMoreRecommend.addEventListener('click', function() {
+                    showToast('更多选择功能即将上线');
+                });
+            }
+            
+            // 调试输出添加后容器状态
+            console.log('更多选择模块初始化完成，添加了', Math.min(recommendations.length, maxItems), '个商品');
+            console.log('添加后容器尺寸:', 
+                '宽度=', recommendList.offsetWidth, 
+                '高度=', recommendList.offsetHeight, 
+                '子元素数量=', recommendList.children.length,
+                'scrollWidth=', recommendList.scrollWidth);
+            
+            // 检查每个子元素
+            Array.from(recommendList.children).forEach((child, index) => {
+                console.log(`商品${index}:`, 
+                    '宽度=', child.offsetWidth, 
+                    '高度=', child.offsetHeight, 
+                    '显示=', getComputedStyle(child).display);
+            });
+        }
+        
+        // 初始化低价囤货
+        function initGroceries() {
+            console.log('开始初始化低价囤货模块');
+            const groceryList = document.getElementById('grocery-list');
+            
+            if (!groceryList) {
+                console.error('找不到低价囤货容器元素(#grocery-list)');
+                return;
+            }
+            
+            // 调试输出父元素尺寸
+            console.log('低价囤货容器尺寸:', 
+                '宽度=', groceryList.offsetWidth, 
+                '高度=', groceryList.offsetHeight,
+                '可见性=', getComputedStyle(groceryList).display,
+                '可见性2=', getComputedStyle(groceryList).visibility,
+                '父元素=', groceryList.parentElement.className);
+            
+            groceryList.innerHTML = ''; // 清空列表，防止重复添加
+            
+            // 低价囤货数据 - 主要为粮油日用品
+            const groceries = [
+                { name: '金龙鱼食用油 5L装', image: 'https://p0.meituan.net/ingee/83d32bc7f4fca5db1ead552fa2d1f28941517.png', price: 59.9, originalPrice: 79.9 },
+                { name: '十月稻田长粒香米 5kg装', image: 'https://p0.meituan.net/ingee/fdfa96ad910aaf71eab6aa9181ce170116873.png', price: 39.9, originalPrice: 49.9 },
+                { name: '海天蚝油特级酱油 700ml', image: 'https://p0.meituan.net/ingee/99df6d5f68221fe1982e92138b034a7b41361.png', price: 15.9, originalPrice: 19.9 },
+                { name: '太古优质白砂糖 454g', image: 'https://p0.meituan.net/ingee/16fbaf5beb40257d11e353681d00383e298604.png', price: 10.9, originalPrice: 13.9 },
+                { name: '雕牌洗衣液 4kg桶装', image: 'https://p0.meituan.net/ingee/c941b769c60121218521a56afa969e32262595.png', price: 29.9, originalPrice: 39.9 },
+                { name: '立白洗洁精 1.5kg瓶装', image: 'https://p0.meituan.net/ingee/99569bd922a8d4111c435c3444b5882840815.png', price: 12.9, originalPrice: 16.9 },
+                { name: '清风抽纸 24包整箱', image: 'https://p0.meituan.net/ingee/1c6ef64215284fbd4de379cea219753b360633.png', price: 49.9, originalPrice: 69.9 },
+                { name: '云南干红花椒 100g盒装', image: 'https://p0.meituan.net/ingee/57ecfeb1c143b14a60c7929775bb6407305889.png', price: 9.9, originalPrice: 12.9 },
+                { name: '金龙鱼玉米油 5L桶装', image: 'https://p0.meituan.net/ingee/83d32bc7f4fca5db1ead552fa2d1f28941517.png', price: 49.9, originalPrice: 69.9 },
+                { name: '鲁花花生油 5L桶装', image: 'https://p0.meituan.net/ingee/83d32bc7f4fca5db1ead552fa2d1f28941517.png', price: 69.9, originalPrice: 89.9 }
+            ];
+            
+            // 最多显示10个商品
+            const maxItems = Math.min(groceries.length, 10);
+            
+            groceries.slice(0, maxItems).forEach((item, index) => {
+                const groceryItem = document.createElement('div');
+                groceryItem.className = 'recommend-item'; // 使用recommend-item样式，保持一致性
+                groceryItem.setAttribute('data-index', index); // 添加索引属性，方便调试
+                
+                groceryItem.innerHTML = `
+                    <div class="image-overlay">
+                        <img 
+                            src="${item.image}" 
+                            alt="${item.name}" 
+                            class="recommend-item-image"
+                            onerror="handleImgError(this, '${item.name}')"
+                        >
+                    </div>
+                    <div class="recommend-item-name">${item.name}</div>
+                    <div class="recommend-item-price">¥${item.price.toFixed(1)}</div>
+                    <div class="recommend-item-original">¥${item.originalPrice.toFixed(1)}</div>
+                    <div class="recommend-add-button">
+                        <div class="recommend-add-button-text">+</div>
+                    </div>
+                `;
+                
+                groceryList.appendChild(groceryItem);
+                
+                // 添加点击事件
+                const addButton = groceryItem.querySelector('.recommend-add-button');
+                if (addButton) {
+                    addButton.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        addToCart(item);
+                    });
+                }
+            });
+            
+            // 添加"查看更多"点击事件
+            const viewMoreGrocery = document.getElementById('view-more-grocery');
+            if (viewMoreGrocery) {
+                viewMoreGrocery.addEventListener('click', function() {
+                    showToast('低价囤货功能即将上线');
+                });
+            }
+            
+            // 调试输出添加后容器状态
+            console.log('低价囤货模块初始化完成，添加了', Math.min(groceries.length, maxItems), '个商品');
+            console.log('添加后容器尺寸:', 
+                '宽度=', groceryList.offsetWidth, 
+                '高度=', groceryList.offsetHeight, 
+                '子元素数量=', groceryList.children.length,
+                'scrollWidth=', groceryList.scrollWidth);
+            
+            // 检查每个子元素
+            Array.from(groceryList.children).forEach((child, index) => {
+                console.log(`商品${index}:`, 
+                    '宽度=', child.offsetWidth, 
+                    '高度=', child.offsetHeight, 
+                    '显示=', getComputedStyle(child).display);
+            });
+        }
+        
+        // 添加一个函数，在页面加载完成一定时间后检查元素状态
+        function checkElementsStatus() {
+            setTimeout(() => {
+                console.log('======= 延迟检查元素状态 =======');
+                const recommendList = document.getElementById('recommend-list');
+                const groceryList = document.getElementById('grocery-list');
+                
+                if (recommendList) {
+                    console.log('更多选择容器状态:', 
+                        '宽度=', recommendList.offsetWidth, 
+                        '高度=', recommendList.offsetHeight, 
+                        '子元素数量=', recommendList.children.length,
+                        'scrollWidth=', recommendList.scrollWidth,
+                        'visibility=', getComputedStyle(recommendList).visibility,
+                        'display=', getComputedStyle(recommendList).display);
+                }
+                
+                if (groceryList) {
+                    console.log('低价囤货容器状态:', 
+                        '宽度=', groceryList.offsetWidth, 
+                        '高度=', groceryList.offsetHeight, 
+                        '子元素数量=', groceryList.children.length,
+                        'scrollWidth=', groceryList.scrollWidth,
+                        'visibility=', getComputedStyle(groceryList).visibility,
+                        'display=', getComputedStyle(groceryList).display);
+                }
+                
+                console.log('================================');
+            }, 1000); // 1秒后检查
+        }
+        
+        // 添加一个函数，强制刷新布局
+        function forceLayoutRefresh() {
+            console.log('强制刷新布局...');
+            
+            // 获取所有容器元素
+            const containers = [
+                document.getElementById('recommend-list'),
+                document.getElementById('grocery-list')
+            ];
+            
+            // 对每个容器强制触发重排
+            containers.forEach(container => {
+                if (!container) return;
+                
+                // 保存当前内容
+                const currentContent = container.innerHTML;
+                
+                // 尝试增加容器可见性
+                container.style.display = 'flex';
+                container.style.minHeight = '366px';
+                
+                // 临时添加边框以便观察
+                container.style.border = '1px solid transparent';
+                
+                // 强制浏览器重新计算布局
+                void container.offsetHeight;
+                
+                // 移除临时边框
+                setTimeout(() => {
+                    container.style.border = '';
+                }, 500);
+                
+                console.log(`容器 ${container.id} 刷新完成, 尺寸: ${container.offsetWidth}x${container.offsetHeight}`);
+            });
+        }
+        
+        // 显示吐司提示
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            if (toast) {
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(function() {
+                    toast.style.display = 'none';
+                }, 2000);
+            } else {
+                console.error('找不到toast元素');
+            }
+        }
+        
+        // 添加其他"查看更多"按钮的点击事件处理
+        function initViewMoreEvents() {
+            // 为所需食材的"查看更多"添加点击事件
+            const viewMoreIngredients = document.getElementById('view-more-ingredients');
+            if (viewMoreIngredients) {
+                viewMoreIngredients.addEventListener('click', function() {
+                    showToast('所需食材详情功能即将上线');
+                });
+            }
+            
+            // 为组合购买的"查看更多"添加点击事件
+            const viewMoreCombo = document.getElementById('view-more-combo');
+            if (viewMoreCombo) {
+                viewMoreCombo.addEventListener('click', function() {
+                    showToast('组合购买详情功能即将上线');
+                });
+            }
+        }
+    </script>
+</body>
+</html>
